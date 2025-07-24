@@ -156,11 +156,11 @@ module _ where
     B : A → Type
     issetB : (x : A) → isSet (B x)
 
-  test : A
-  test = transport refl a
+  -- test : A
+  -- test = transport refl a
 
-  Test : Type
-  Test = transport refl A
+  -- Test : Type
+  -- Test = transport refl A
 
   issetPiAB : isSet ((x : A) → B x)
   issetPiAB f g p q i j x = issetB x (f x) (g x) (λ i → p i x) (λ i → q i x) i j
@@ -168,6 +168,12 @@ module _ where
   issetSigmaAB : isSet (Σ[ a ∈ A ] B a)
   issetSigmaAB x y p q i j .fst = issetA (x .fst) (y .fst) (λ i → p i .fst) (λ i → q i .fst) i j
   issetSigmaAB x y p q i j .snd =
+    -- isSet→SquareP : if you are locally isSet, ie given (A : I → I → Type), we have (isSetA : (i j : I) → isSet (A i j)),
+    -- then we have the (heterogenous) sqFill property.
+    -- even though our setting is homogenous, since sigma types are dependent,
+    -- a homogenous shape [line, square, cube] in the first projection
+    -- will give rise to a corresponding shape [line, square, cube] of types in the second projection.
+    -- This forces us to give a PathP/SquareP in the second projection.
     isSet→SquareP (λ i j → issetB (issetSigmaAB x y p q i j .fst))
     (λ i → p i .snd) (λ i → q i .snd) refl refl i j
     -- issetB (issetSigmaAB x y p q i j .proj₁) {!transp (λ k → B ())!} {!!} {!!} {!!} i j
@@ -195,11 +201,24 @@ module SqFillNonDep where
   hSqFillPiAB l r u d i j a = hSqFillB a (λ i → l i a) (λ i → r i a) (λ i → u i a) (λ i → d i a) i j
 
   if_then_else_end : I → I → I → I
-  -- if k then i else j end = ((~ k) ∧ j) ∨ (k ∧ i)
-  -- if k then i else j end = (j ∨ ~ k) ∧ (i ∨ k)
-  if i then j else k end = (k ∧ ~ i) ∨ ((i ∨ k) ∧ j)
+  -- this is the one that compiles to j or k when i is i0 or i1
+  if i then j else k end = ((~ i) ∧ k) ∨ (i ∧ j)
+  -- if i then j else k end = (k ∨ i) ∧ (j ∨ ~ i)
+  -- if i then j else k end = (k ∧ ~ i) ∨ ((i ∨ k) ∧ j)
+  -- if i then j else k end = (i ∨ k) ∧ (j ∨ ~ i)
+
+  if1_then_else_end : I → I → I → I
+  -- this is the one that compiles to j or k when j = k.
+  if1 i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
+
+  -- is it possible to have both?
+  if'_then_else_end : I → I → I → I
+  if' i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j) ∨ ((~ i) ∧ k) ∨ (i ∧ j)
 
   {-# INLINE if_then_else_end #-}
+
+  -- test : I → I → I
+  -- test i j = {!if i then j else j end!}
 
   {-
   spread : (i j : I) → A i j → (i' j' : I) → A i' j'
@@ -216,6 +235,7 @@ module SqFillNonDep where
   sqfillSigmaAB {lu} {ld} l {ru} {rd} r u d i j .snd =
     hSqFillB (sqfillSigmaAB l r u d i j .proj₁)
       {a₀₀ = lub'} {a₀₁ = ldb'} lb' {a₁₀ = rub'} {a₁₁ = rdb'} rb' ub' db' i {!j!}
+      -- {!!} {!!} {!!} {!!} {!!} {!!}
     where
       sqa : Square (cong fst l) (cong fst r) (cong fst u) (cong fst d)
       sqa = hSqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d)
@@ -224,50 +244,63 @@ module SqFillNonDep where
       -- coe0i A x y i p j = p (if j then i else i0 end)
 
       spread : (i j i' j' : I) → sqa i j ≡ sqa i' j'
-      spread i j i' j' k = sqa (if k then i' else i end) (if k then j' else j end)
+      -- spread i j i' j' k = sqa (if1 k then i' else i end) (if1 k then j' else j end)
+      -- spread i j i' j' k = sqa (if k then i' else i end) (if k then j' else j end)
+      spread i j i' j' k = sqa (if' k then i' else i end) (if' k then j' else j end)
 
       -- spreadRegular : (i j : I) → spread i j i j ≡ refl
       -- spreadRegular i j = refl
 
-      lub : B (fst lu)
+      lub : B (sqa i0 i0)
       lub = snd lu
       lub' : B (sqa i j)
-      lub' = transport (λ k → B (spread i0 i0 i j k)) lub
-      LemmaLU : PathP (λ k → B (sqa (if k then i else i0 end) (if k then j else i0 end))) lub lub'
-      LemmaLU = transport-filler _ lub
+      -- lub' = transport (λ k → B (spread i0 i0 i j k)) lub
+      -- lub' = transport (λ k → B (sqa (i ∧ k) (j ∧ k))) lub
+      lub' = transp (λ k → B (spread i0 i0 i j k)) (~ i ∧ ~ j) lub
+      LemmaLU : PathP (λ k → B (spread i0 i0 i j k)) lub lub'
+      LemmaLU = {!transp (λ k → B )!}
 
       ldb : B (fst ld)
       ldb = snd ld
       ldb' : B (sqa i j)
-      ldb' = transport (λ k → B (spread i0 i1 i j k)) ldb
-      LemmaLD : PathP (λ k → B (sqa (if k then i else i0 end) (if k then j else i1 end))) ldb ldb'
-      LemmaLD = transport-filler _ ldb
+      -- ldb' = transport (λ k → B (sqa (i ∧ k) (~ k ∨ j))) ldb
+      ldb' = transp (λ k → B (spread i0 i1 i j k)) (~ i ∧ j) ldb
+      LemmaLD : PathP (λ k → B (spread i0 i1 i j k)) ldb ldb'
+      LemmaLD = {!!}
 
       lb : PathP (λ j → B (sqa i0 j)) lub ldb
       lb = cong snd l
+      lb' : lub' ≡ ldb'
+      lb' j' = transp (λ k → B (spread i0 j' i j k)) (~ i ∧ (if  j' then j else ~ j end)) (lb j')
 
       rub : B (fst ru)
       rub = snd ru
       rub' : B (sqa i j)
-      rub' = transport (λ k → B (spread i1 i0 i j k)) rub
-      LemmaRU : PathP (λ k → B (sqa (if k then i else i1 end) (if k then j else i0 end))) rub rub'
-      LemmaRU = transport-filler _ rub
+      rub' = transp (λ k → B (spread i1 i0 i j k)) (i ∧ ~ j) rub
+      LemmaRU : PathP (λ k → B (spread i1 i0 i j k)) rub rub'
+      LemmaRU = {!!}
 
       rdb : B (fst rd)
       rdb = snd rd
       rdb' : B (sqa i j)
-      rdb' = transport (λ k → B (spread i1 i1 i j k)) rdb
-      LemmaRD : PathP (λ k → B (sqa (if k then i else i1 end) (if k then j else i1 end))) rdb rdb'
-      LemmaRD = transport-filler _ rdb
+      rdb' = transp (λ k → B (spread i1 i1 i j k)) (i ∧ j) rdb
+      LemmaRD : PathP (λ k → B (spread i1 i1 i j k)) rdb rdb'
+      LemmaRD = {!!}
 
       rb : PathP (λ j → B (sqa i1 j)) rub rdb
       rb = cong snd r
+      rb' : rub' ≡ rdb'
+      rb' j' = transp (λ k → B (spread i1 j' i j k)) (i ∧ (if  j' then j else ~ j end)) (rb j')
 
       ub : PathP (λ i → B (sqa i i0)) lub rub
       ub = cong snd u
+      ub' : lub' ≡ rub'
+      ub' i' = transp (λ k → B (spread i' i0 i j k)) ((if  i' then i else ~ i end) ∧ ~ j) (ub i')
 
       db : PathP (λ i → B (sqa i i1)) ldb rdb
       db = cong snd d
+      db' : ldb' ≡ rdb'
+      db' i' = transp (λ k → B (spread i' i1 i j k)) ((if  i' then i else ~ i end) ∧ j) (db i')
 
       {-
         lub'
@@ -279,34 +312,181 @@ module SqFillNonDep where
         ldb'
         we need a comp!
       -}
-      lb' : lub' ≡ ldb'
-      lb' i' = comp (λ k → B (sqa (if k then i else i0 end) (if k then j else i' end))) (λ{
-          j' (i' = i0) → LemmaLU j' ;
-          j' (i' = i1) → LemmaLD j'
-        }) (lb i')
+      -- lb' : lub' ≡ ldb'
+      -- -- lb' i' = comp (λ k → B (sqa (if1 k then i else i0 end) (if1 k then j else i' end))) (λ{
+      -- lb' j' = comp (λ k → B (spread i0 j' i j k)) (λ{
+      --     k (j' = i0) → LemmaLU k ;
+      --     k (j' = i1) → LemmaLD k
+      --   }) (lb j')
 
-      rb' : rub' ≡ rdb'
-      rb' i' = comp (λ k → B (sqa (if k then i else i1 end) (if k then j else i' end))) (λ{
-          j' (i' = i0) → LemmaRU j' ;
-          j' (i' = i1) → LemmaRD j'
-        }) (rb i')
+      -- rb' : rub' ≡ rdb'
+      -- rb' j' = comp (λ k → B (spread i1 j' i j k)) (λ{
+      --     k (j' = i0) → LemmaRU k ;
+      --     k (j' = i1) → LemmaRD k
+      --   }) (rb j')
 
-      ub' : lub' ≡ rub'
-      ub' i' = comp (λ k → B (sqa (if k then i else i' end) (if k then j else i0 end))) (λ{
-          j' (i' = i0) → LemmaLU j' ;
-          j' (i' = i1) → LemmaRU j'
-        }) (ub i')
+      -- ub' : lub' ≡ rub'
+      -- ub' i' = comp (λ k → B (spread i' i0 i j k)) (λ{
+      --     j' (i' = i0) → LemmaLU j' ;
+      --     j' (i' = i1) → LemmaRU j'
+      --   }) (ub i')
 
-      db' : ldb' ≡ rdb'
-      db' i' = comp (λ k → B (sqa (if k then i else i' end) (if k then j else i1 end))) (λ{
-          j' (i' = i0) → LemmaLD j' ;
-          j' (i' = i1) → LemmaRD j'
-        }) (db i')
+      -- db' : ldb' ≡ rdb'
+      -- -- db' i' = comp (λ k → B (sqa (if k then i else i' end) (~ k ∨ j))) (λ{
+      -- db' i' = comp (λ k → B (spread i' i1 i j k)) (λ{
+      --     j' (i' = i0) → LemmaLD j' ;
+      --     j' (i' = i1) → LemmaRD j'
+      --   }) (db i')
+
+      -- sqb' : B (sqa i j)
+      -- sqb' = hSqFillB (sqfillSigmaAB l r u d i j .fst) {a₀₀ = lub'} {a₀₁ = ldb'} lb' {a₁₀ = rub'} {a₁₁ = rdb'} rb' ub' db' i j
 
   --   -- either we fill the general square at B (αij) for any i j (we need to transport wiggle each side up to i,j)
   --   sqfillB (sqfillSigmaAB l r u d i j .proj₁) {!fromPathP (cong snd l)!} {!!} {!!} {!!} i {!!}
   --   -- or first wiggle our square to the comfortable transatlantic position and fill in the sides.
   --   -- toPathP (toPathP {!!}) i
+
+  -- here we recreate the isOfHLevelΣ proof from the HLevels file, but here for the hSqFill property instead.
+  -- Idea: To show the hSqFill property for the Sigma type,
+  -- it suffices to take an empty square in the Sigma type and give it a filling.
+  -- To give a filling in a Sigma type is to give fillings in the two projections.
+  -- 1. A filling in the first projection is easy: we can direcly apply the hSqFillA assumption.
+  -- 2. A filling in the second projection is tricky because the square is HETEROGENOUS.
+  --    Why? Because Sigma type depends on the first projection, and the first projection is a square.
+  --    In other words, we need to give a PathP from say l to r in the second projection.
+  -- 3. Here we use two intermediate, standard results about paths:
+  --    i. (PathP A x y) is isomorphic to (transport A x ≡ y).
+  --       So instead of giving a (PathP _ l r), we can give a (transport _ l ≡ r).
+  --       In particular, we don't need the whole isomorphism: we merely need a way to go TO PathP from Path.
+  --    ii. It remains to provide a (transport _ l ≡ r), a homogenous equality in the ambient type (PathP (A i1) ru rd).
+  --        This can be done by noting that if a type A has h-level (suc n), then its path space has h-level n.
+  --        In particular,
+  --        - the type of the endpoint of (PathP (A i1) ru rd), (A i1 i1) has sqfill (by our assumption) so is a set, and
+  --        - thus the Path type (PathP (A i1) ru rd) is a prop.
+  --        - now supply (transport _ l) and r, we get an equality between them.
+  sqfillSigmaAB' : hSqFill (Σ[ a ∈ A ] B a)
+  sqfillSigmaAB' l r u d i j .fst = hSqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j
+  sqfillSigmaAB' {lu} {ld} l {ru} {rd} r u d i j .snd =
+    pathToPathP (λ i → PathP (λ j → SqB i j) (u i .snd) (d i .snd)) (cong snd l) (cong snd r)
+      (hSqFill→PathPIsProp (λ j → SqB i1 j) (hSqFillB (sqA i1 i1)) (snd ru) (snd rd) (transport (λ i → PathP (λ j → SqB i j) (u i .snd) (d i .snd)) (cong snd l)) (cong snd r) )
+      i j
+    where
+      sqA : I → I → A
+      sqA i j = (hSqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j)
+
+      SqB : I → I → Type
+      SqB i j = B (sqA i j)
+
+      -- the key idea is
+      pathToPathP : (A : I → Type) (x : A i0) (y : A i1) → transport (λ i → A i) x ≡ y → PathP A x y
+      pathToPathP A x y p i = hcomp (λ j → λ {
+        (i = i0) → x;
+        (i = i1) → p j
+        }) (transp (λ j → A (i ∧ j)) (~ i) x)
+
+      open import Cubical.Foundations.Isomorphism using (Iso)
+      open import Cubical.Foundations.Path using (PathPIsoPath)
+
+      -- Kan operations hidden in:
+      -- - isPropRetract has 1 hcomp
+      -- - PathPIsoPath .Iso.leftInv needs uniqueness of hcomp, and also several hcomps
+      hSqFill→PathPIsProp : (A : I → Type) (hSqFillA : hSqFill (A i1)) (x : A i0) (y : A i1) → isProp (PathP A x y)
+      hSqFill→PathPIsProp A hSqFillA x y = isPropRetract fromPathP (pathToPathP A x y) (PathPIsoPath A x y .Iso.leftInv) (λ p q → hSqFillA p q refl refl)
+
+  data _+_ (A B : Type) : Type where
+    inl : A → A + B
+    inr : B → A + B
+
+  data ⊥ : Type where
+
+  ⊥-elim : {A : Type} (x : ⊥) → A
+  ⊥-elim ()
+
+  data ⊤ : Type where
+    tt : ⊤
+
+  inl≠inr : ∀ A B (x : A) (y : B) → (inl x ≡ inr y) → ⊥
+  inl≠inr A B x y p = transport (cong isLeft p) tt
+    where
+      isLeft : (A + B) → Type
+      isLeft (inl x) = ⊤
+      isLeft (inr y) = ⊥
+
+  hSqFillCoproduct : hSqFill (A + A)
+  hSqFillCoproduct {inl lu} {inl ld} l {inl ru} {inl rd} r u d i j =
+    outS (sqa' i j) 
+    where
+      Cover : (c c' : A + A) → Type
+      Cover (inl x) (inl y) = x ≡ y
+      Cover (inr x) (inr y) = x ≡ y
+      Cover _ _ = ⊥
+
+      reflCode : (c : A + A) → Cover c c
+      reflCode (inl x) = refl
+      reflCode (inr x) = refl
+
+      encode : {c c' : A + A} → c ≡ c' → Cover c c'
+      -- encode {c} = J (λ c' _ → Cover c c') (reflCode c)
+      encode {c} p = transport (λ i → Cover c (p i)) (reflCode c)
+
+      decode : {c c' : A + A} → Cover c c' → c ≡ c'
+      decode {inl x} {inl y} = cong inl
+      decode {inr x} {inr y} = cong inr
+      -- decode {inl x} {inl y} = J (λ y _ → inl x ≡ inl y) refl
+      -- decode {inr x} {inr y} = J (λ y _ → inr x ≡ inr y) refl
+
+      decodeEncode : {c c' : A + A} (p : c ≡ c') → decode (encode p) ≡ p
+      decodeEncode {inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
+      decodeEncode {inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
+
+      -- TODO: this has the right type already (A + A) but boundary conditions are off
+      -- i.e. [inl (encode l j)] and [l j] are only propositionally equal.
+      -- Solution: hcomp [sqa] to have the right type.
+      sqa : (i j : I) → (A + A) [ (i ∨ ~ i ∨ j ∨ ~ j) ↦ (λ where
+        -- (i = i0) → l j
+        -- (i = i1) → r j
+        -- (j = i0) → u i
+        -- (j = i1) → d i) ]
+          (i = i0) → inl (encode l j)
+          (i = i1) → inl (encode r j)
+          (j = i0) → inl (encode u i)
+          (j = i1) → inl (encode d i))
+        ]
+      sqa i j = inS (inl {A} {A} (hSqFillA (encode l) (encode r) (encode u) (encode d) i j))
+
+      lemmal : l ≡ cong inl (encode l)
+      lemmal = sym (decodeEncode l)
+
+      sqa' : (i j : I) → (A + A) [ (i ∨ ~ i ∨ j ∨ ~ j) ↦ (λ where
+          (i = i0) → l j
+          (i = i1) → r j
+          (j = i0) → u i
+          (j = i1) → d i
+        )]
+      sqa' i j = inS (hcomp (λ where
+          k (i = i0) → decodeEncode l k j
+          k (i = i1) → decodeEncode r k j
+          k (j = i0) → decodeEncode u k i
+          k (j = i1) → decodeEncode d k i)
+        (outS (sqa i j)))
+
+  hSqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j = {!!}
+  hSqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr A A x y l)
+  hSqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr A A y x (sym l))
+  hSqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr A A x y u)
+  hSqFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥-elim (inl≠inr A A y x (sym u))
+  hSqFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr A A x y d)
+  hSqFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr A A y x (sym d))
+  -- hSqFillCoproduct {_} {_} _ {inl x} {inr y} r _ _ = ⊥-elim (inl≠inr A A x y r)
+  -- hSqFillCoproduct {_} {_} _ {inr x} {inl y} r _ _ = ⊥-elim (inl≠inr A A y x (sym r))
+
+  lineToPathP : (A : I → Type) → Type
+  lineToPathP A = PathP (λ i → Type) (A i0) (A i1)
+
+  PathPToLine : ∀ A B → (P : PathP (λ i → Type) A B) → I → Type
+  PathPToLine A B P i = P i
+
+  -- IsoLinePathP : (A : I → Type) → Iso
 
 module _ where
   sqFill : {ℓ : Level} → (A : I → I → Type ℓ) → Type ℓ
@@ -330,7 +510,8 @@ module _ where
   if_then_else_end : I → I → I → I
   -- if k then i else j end = ((~ k) ∧ j) ∨ (k ∧ i)
   -- if k then i else j end = (j ∨ ~ k) ∧ (i ∨ k)
-  if i then j else k end = (k ∧ ~ i) ∨ ((i ∨ k) ∧ j)
+  -- if i then j else k end = (k ∧ ~ i) ∨ ((i ∨ k) ∧ j)
+  if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
 
   {-# INLINE if_then_else_end #-}
 
@@ -340,13 +521,20 @@ module _ where
   -- not provable because I is only a de morgan algebra.
   -- in particular, (~ k ∨ i) ∧ (k ∨ i) ≠ i.
   ≡spread : (i j : I) (a : A i j) → a ≡ spread i j a i j
-  ≡spread i j a = transport-filler (λ k → A (if k then i else i end) (if k then j else j end)) a 
+  ≡spread i j a = transport-filler (λ k → A (if k then i else i end) (if k then j else j end)) a
 
   -- spread' : (i j : I) → A i j → (i' j' : I) → A i' j'
   -- spread' i j a i' j' = {!!}
 
   sqfillPiAB : sqFill (λ i j → (a : A i j) → B i j a)
   sqfillPiAB {ul} {dl} l {ur} {dr} r u d i j a =
+    -- comp (λ k → congS (B i j) (sym (≡spread i j a)) k) {φ = i ∨ ~ i ∨ j ∨ ~ j}
+    --   (λ where
+    --     k (i = i0) → lemmaLB 1=1 (~ k)
+    --     k (i = i1) → lemmaRB 1=1 (~ k)
+    --     k (j = i0) → lemmaUB 1=1 (~ k)
+    --     k (j = i1) → lemmaDB 1=1 (~ k)
+    --       ) (b i j)
     comp (λ k → congS (B i j) (sym (≡spread i j a)) k) {φ = i ∨ ~ i ∨ j ∨ ~ j}
       (λ where
         k (i = i0) → lemmaLB 1=1 (~ k)
@@ -540,5 +728,3 @@ module ISqFill where
   --   where
   --     rjθ≡tt : ∀ {θ'} → r j θ' ≡ tt
   --     rjθ≡tt k = {!transp!}
-
-  _ = {!Iso!}
