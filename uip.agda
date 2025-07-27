@@ -412,65 +412,76 @@ module SqFillNonDep where
       isLeft (inl x) = ⊤
       isLeft (inr y) = ⊥
 
+  Cover : (c c' : A + A) → Type
+  Cover (inl x) (inl y) = x ≡ y
+  Cover (inr x) (inr y) = x ≡ y
+  Cover _ _ = ⊥
+
+  reflCode : (c : A + A) → Cover c c
+  reflCode (inl x) = refl
+  reflCode (inr x) = refl
+
+  encode : {c c' : A + A} → c ≡ c' → Cover c c'
+  -- encode {c} = J (λ c' _ → Cover c c') (reflCode c)
+  encode {c} p = transport (λ i → Cover c (p i)) (reflCode c)
+
+  decode : {c c' : A + A} → Cover c c' → c ≡ c'
+  decode {inl x} {inl y} = cong inl
+  decode {inr x} {inr y} = cong inr
+  -- decode {inl x} {inl y} = J (λ y _ → inl x ≡ inl y) refl
+  -- decode {inr x} {inr y} = J (λ y _ → inr x ≡ inr y) refl
+
+  decodeEncode : {c c' : A + A} (p : c ≡ c') → decode (encode p) ≡ p
+  decodeEncode {inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
+  decodeEncode {inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
+
+  -- TODO: this has the right type already (A + A) but boundary conditions are off
+  -- i.e. [inl (encode l j)] and [l j] are only propositionally equal.
+  -- Solution: hcomp [sqa] to have the right type.
+  -- sqa : (i j : I) → (A + A) [ (i ∨ ~ i ∨ j ∨ ~ j) ↦ (λ where
+  --   -- (i = i0) → l j
+  --   -- (i = i1) → r j
+  --   -- (j = i0) → u i
+  --   -- (j = i1) → d i) ]
+  --     (i = i0) → inl (encode l j)
+  --     (i = i1) → inl (encode r j)
+  --     (j = i0) → inl (encode u i)
+  --     (j = i1) → inl (encode d i))
+  --   ]
+  -- sqa i j = inS (inl {A} {A} (hSqFillA (encode l) (encode r) (encode u) (encode d) i j))
+
+  -- lemmal : l ≡ cong inl (encode l)
+  -- lemmal = sym (decodeEncode l)
+
+  -- sqa' : (i j : I) → (A + A) [ (i ∨ ~ i ∨ j ∨ ~ j) ↦ (λ where
+  --     (i = i0) → l j
+  --     (i = i1) → r j
+  --     (j = i0) → u i
+  --     (j = i1) → d i
+  --   )]
+  -- sqa' i j = inS (hcomp (λ where
+  --     k (i = i0) → decodeEncode l k j
+  --     k (i = i1) → decodeEncode r k j
+  --     k (j = i0) → decodeEncode u k i
+  --     k (j = i1) → decodeEncode d k i)
+  --   (inl {A} {A} (hSqFillA (encode l) (encode r) (encode u) (encode d) i j)))
+
   hSqFillCoproduct : hSqFill (A + A)
   hSqFillCoproduct {inl lu} {inl ld} l {inl ru} {inl rd} r u d i j =
-    outS (sqa' i j) 
-    where
-      Cover : (c c' : A + A) → Type
-      Cover (inl x) (inl y) = x ≡ y
-      Cover (inr x) (inr y) = x ≡ y
-      Cover _ _ = ⊥
-
-      reflCode : (c : A + A) → Cover c c
-      reflCode (inl x) = refl
-      reflCode (inr x) = refl
-
-      encode : {c c' : A + A} → c ≡ c' → Cover c c'
-      -- encode {c} = J (λ c' _ → Cover c c') (reflCode c)
-      encode {c} p = transport (λ i → Cover c (p i)) (reflCode c)
-
-      decode : {c c' : A + A} → Cover c c' → c ≡ c'
-      decode {inl x} {inl y} = cong inl
-      decode {inr x} {inr y} = cong inr
-      -- decode {inl x} {inl y} = J (λ y _ → inl x ≡ inl y) refl
-      -- decode {inr x} {inr y} = J (λ y _ → inr x ≡ inr y) refl
-
-      decodeEncode : {c c' : A + A} (p : c ≡ c') → decode (encode p) ≡ p
-      decodeEncode {inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
-      decodeEncode {inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
-
-      -- TODO: this has the right type already (A + A) but boundary conditions are off
-      -- i.e. [inl (encode l j)] and [l j] are only propositionally equal.
-      -- Solution: hcomp [sqa] to have the right type.
-      sqa : (i j : I) → (A + A) [ (i ∨ ~ i ∨ j ∨ ~ j) ↦ (λ where
-        -- (i = i0) → l j
-        -- (i = i1) → r j
-        -- (j = i0) → u i
-        -- (j = i1) → d i) ]
-          (i = i0) → inl (encode l j)
-          (i = i1) → inl (encode r j)
-          (j = i0) → inl (encode u i)
-          (j = i1) → inl (encode d i))
-        ]
-      sqa i j = inS (inl {A} {A} (hSqFillA (encode l) (encode r) (encode u) (encode d) i j))
-
-      lemmal : l ≡ cong inl (encode l)
-      lemmal = sym (decodeEncode l)
-
-      sqa' : (i j : I) → (A + A) [ (i ∨ ~ i ∨ j ∨ ~ j) ↦ (λ where
-          (i = i0) → l j
-          (i = i1) → r j
-          (j = i0) → u i
-          (j = i1) → d i
-        )]
-      sqa' i j = inS (hcomp (λ where
-          k (i = i0) → decodeEncode l k j
-          k (i = i1) → decodeEncode r k j
-          k (j = i0) → decodeEncode u k i
-          k (j = i1) → decodeEncode d k i)
-        (outS (sqa i j)))
-
-  hSqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j = {!!}
+    -- outS (sqa' i j)
+    (hcomp (λ where
+        k (i = i0) → decodeEncode l k j
+        k (i = i1) → decodeEncode r k j
+        k (j = i0) → decodeEncode u k i
+        k (j = i1) → decodeEncode d k i)
+      (inl {A} {A} (hSqFillA (encode l) (encode r) (encode u) (encode d) i j)))
+  hSqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j =
+    (hcomp (λ where
+        k (i = i0) → decodeEncode l k j
+        k (i = i1) → decodeEncode r k j
+        k (j = i0) → decodeEncode u k i
+        k (j = i1) → decodeEncode d k i)
+      (inr {A} {A} (hSqFillA (encode l) (encode r) (encode u) (encode d) i j)))
   hSqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr A A x y l)
   hSqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr A A y x (sym l))
   hSqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr A A x y u)
@@ -486,7 +497,16 @@ module SqFillNonDep where
   PathPToLine : ∀ A B → (P : PathP (λ i → Type) A B) → I → Type
   PathPToLine A B P i = P i
 
-  -- IsoLinePathP : (A : I → Type) → Iso
+  hSqFillPath : {a : A} → hSqFill (a ≡ a)
+  hSqFillPath {a} {lu} {ld} l {ru} {rd} r u d i j =
+    hcomp (λ k → λ { (i = i0) → hSqFillA lu (l j) refl refl k
+                  ; (i = i1) → hSqFillA lu (r j) refl refl k
+                  ; (j = i0) → hSqFillA lu (u i) refl refl k
+                  ; (j = i1) → hSqFillA lu (d i) refl refl k}) lu
+    -- where
+    --   h : isProp (a ≡ a)
+    --   h x y i j = hSqFillA x y refl refl i j
+
 
 module _ where
   sqFill : {ℓ : Level} → (A : I → I → Type ℓ) → Type ℓ
@@ -614,69 +634,80 @@ module _ where
   sqfillSigmaAB l r u d i j .snd = sqFillB (λ i' j' → sqfillSigmaAB l r u d i' j' .fst)
                                            (λ j → l j .snd) (λ j → r j .snd) (λ i → u i .snd) (λ i → d i .snd) i j
 
-  -- open import Data.Unit
+  data cpd (A B : I → I → Type) (i j : I) : Type where
+    inl : A i j → cpd A B i j
+    inr : B i j → cpd A B i j
 
-  -- issetTop : isSet ⊤
-  -- issetTop tt tt refl refl i j = tt
+  data ⊥ : Type where
 
-  -- open import Data.Empty
+  ⊥-elim : {A : Type} (x : ⊥) → A
+  ⊥-elim ()
 
-  -- issetBot : isSet ⊥
-  -- issetBot ()
+  data ⊤ : Type where
+    tt : ⊤
 
-  -- open import Data.Nat
+  -- inl≠inr : ∀ {A B : I → I → Type} {i j i' j' : I} (x : A i j) (y : B i' j') → (PathP (λ k → cpd A B ((k ∨ i) ∧ (~ k ∨ i')) ((k ∨ j) ∧ (~ k ∨ j'))) (inl x) (inr y)) → ⊥
+  inl≠inr : ∀ {A B : I → I → Type} {i j i' j' : I} (x : A i j) (y : B i' j') → (PathP (λ k → cpd A B (if k then i' else i end) (if k then j' else j end)) (inl x) (inr y)) → ⊥
+  inl≠inr {A} {B} x y p = transport (λ k → isLeft (p k)) tt
+    where
+      isLeft : {i j : I} → cpd A B i j → Type
+      isLeft (inl x) = ⊤
+      isLeft (inr y) = ⊥
 
-  -- znots : (n : ℕ) → zero ≡ suc n → ⊥
-  -- znots n p = subst c p tt
-  --   where
-  --     c : ℕ → _
-  --     c zero = ⊤
-  --     c (suc n) = ⊥
+  Cover : {i j i' j' : I} (c : cpd A A i j) (c' : cpd A A i' j') → Type
+  Cover {i} {j} {i'} {j'} (inl x) (inl y) = PathP (λ k → A (if k then i' else i end) (if k then j' else j end)) x y
+  -- Cover {i} {j} {i'} {j'} (inl x) (inl y) = PathP (λ k → A ((k ∨ i) ∧ (~ k ∨ i')) ((k ∨ j) ∧ (~ k ∨ j'))) x y
+  Cover {i} {j} {i'} {j'} (inr x) (inr y) = PathP (λ k → A (if k then i' else i end) (if k then j' else j end)) x y
+  -- Cover {i} {j} {i'} {j'} (inr x) (inr y) = PathP (λ k → A ((k ∨ i) ∧ (~ k ∨ i')) ((k ∨ j) ∧ (~ k ∨ j'))) x y
+  Cover {i} {j} {i'} {j'} _ _ = ⊥
 
-  -- snotz : (n : ℕ) → suc n ≡ zero → ⊥
-  -- snotz n p = subst c p tt
-  --   where
-  --     c : ℕ → _
-  --     c zero = ⊥
-  --     c (suc n) = ⊤
+  reflCode : (i j : I) (c : cpd A A i j) → Cover c c
+  reflCode i j (inl x) = λ k → x
+  reflCode i j (inr x) = λ k → x
 
-  -- codeℕ : (x y : ℕ) → Type
-  -- codeℕ zero zero = ⊤
-  -- codeℕ zero (suc _) = ⊥
-  -- codeℕ (suc _) zero = ⊥
-  -- codeℕ (suc n) (suc m) = codeℕ n m
+  encode : {i j i' j' : I} {c : cpd A A i j} {c' : cpd A A i' j'} (p : PathP (λ k → cpd A A (if k then i' else i end) (if k then j' else j end)) c c') → Cover c c'
+  encode {i} {j} {i'} {j'} {c} p = transport (λ k → Cover c (p k)) (reflCode i j c)
 
-  -- encodeℕ : (x y : ℕ) → x ≡ y → codeℕ x y
-  -- encodeℕ x y p = transport (λ i → codeℕ x (p i)) (r x)
-  --   where
-  --     r : (x : ℕ) → codeℕ x x
-  --     r zero = tt
-  --     r (suc x) = r x
+  decode : {i j i' j' : I} {c : cpd A A i j} {c' : cpd A A i' j'} → Cover c c' → PathP (λ k → cpd A A (if k then i' else i end) (if k then j' else j end)) c c'
+  decode {c = inl x} {c' = inl y} p = λ k → inl (p k)
+  decode {c = inr x} {c' = inr y} p = λ k → inr (p k)
 
-  -- decodeℕ : (x y : ℕ) → codeℕ x y → x ≡ y
-  -- decodeℕ zero zero tt = refl
-  -- decodeℕ (suc x) (suc y) c = cong suc (decodeℕ x y c)
+  decodeEncode : {i j i' j' : I} {c : cpd A A i j} {c' : cpd A A i' j'} (p : PathP (λ k → cpd A A (if k then i' else i end) (if k then j' else j end)) c c') → decode (encode p) ≡ p
+  -- decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
+  -- decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
+  -- decodeEncode {c = inl x} = JDep {!!} (λ c' p → PathP {!!} (decode (encode p)) p) (cong (cong inl) (transportRefl refl))
+  -- decodeEncode {c = inr x} = JDep {!!} (λ c' p → PathP {!!} (decode (encode p)) p) (cong (cong inr) (transportRefl refl))
 
+  sqFillCoproduct : sqFill (cpd A A)
+  sqFillCoproduct {inl lu} {inl ld} l {inl ru} {inl rd} r u d i j =
+    (comp {!!} (λ where
+        k (i = i0) → decodeEncode l k j
+        k (i = i1) → decodeEncode r k j
+        k (j = i0) → decodeEncode u k i
+        k (j = i1) → decodeEncode d k i)
+      (inl {A} {A} (sqFillA (encode l) (encode r) (encode u) (encode d) i j)))
+  sqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j = {!!}
+    -- (hcomp (λ where
+    --     k (i = i0) → decodeEncode l k j
+    --     k (i = i1) → decodeEncode r k j
+    --     k (j = i0) → decodeEncode u k i
+    --     k (j = i1) → decodeEncode d k i)
+    --   (inr {A} {A} (sqFillA (encode l) (encode r) (encode u) (encode d) i j)))
+  sqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr x y l)
+  sqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr y x (λ k → l (~ k)))
+  sqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr x y u)
+  sqFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥-elim (inl≠inr y x (λ k → u (~ k)))
+  sqFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr x y d)
+  sqFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr y x (λ k → d (~ k)))
+  -- sqFillCoproduct {_} {_} _ {inl x} {inr y} r _ _ = ⊥-elim (inl≠inr x y r)
+  -- sqFillCoproduct {_} {_} _ {inr x} {inl y} r _ _ = ⊥-elim (inl≠inr y x (λ k → r (~ k)))
 
-  -- isSetAA→isSetA : {A : Type} → isSet (A × A) → isSet A
-  -- isSetAA→isSetA issetAA a b p q i j = issetAA (a , a) (b , b) (λ i → (p i , p i)) (λ i → (q i , q i)) i j .proj₁
-
-  -- isPropisProp : (A : Type) → isProp (isProp A)
-  -- isPropisProp A f g i a b j = {!!}
-
-  -- isPropUIP : (A : Type) → isProp (isSet A)
-  -- isPropUIP A f g i a b p q j = {!!}
-
-  -- issetPiAB→issetB : {A : Type} {B : A → Type} → isSet ((x : A) → B x) → (x : A) → isSet (B x)
-  -- issetPiAB→issetB h x b1 b2 p q = {!isSetB!}
-
-  SquareP' : (ℓ : Level)
-    (A : I → I → Type ℓ)
-    {a₀₀ : A i0 i0} {a₀₁ : A i0 i1} (a₀₋ : PathP {ℓ = ℓ} (λ j → A i0 j) a₀₀ a₀₁)
-    {a₁₀ : A i1 i0} {a₁₁ : A i1 i1} (a₁₋ : PathP (λ j → A i1 j) a₁₀ a₁₁)
-    (a₋₀ : PathP (λ i → A i i0) a₀₀ a₁₀) (a₋₁ : PathP (λ i → A i i1) a₀₁ a₁₁)
-    → Type ℓ
-  SquareP' ℓ A a₀₋ a₁₋ a₋₀ a₋₁ = PathP (λ i → PathP (λ j → A i j) (a₋₀ i) (a₋₁ i)) a₀₋ a₁₋
+  -- sqFillPath : {a : A} → sqFill (a ≡ a)
+  -- sqFillPath {a} {lu} {ld} l {ru} {rd} r u d i j =
+  --   comp (λ k → λ { (i = i0) → sqFillA lu (l j) refl refl k
+  --                 ; (i = i1) → sqFillA lu (r j) refl refl k
+  --                 ; (j = i0) → sqFillA lu (u i) refl refl k
+  --                 ; (j = i1) → sqFillA lu (d i) refl refl k}) lu
 
 -- third version
 module ISqFill where
@@ -720,8 +751,8 @@ module ISqFill where
     true : Bool
     false : Bool
 
-  data ⊤ : Type where
-    tt : ⊤
+  -- data ⊤ : Type where
+  --   tt : ⊤
 
   -- ISqFillBool : ISqFill Θ (λ _ _ _ → ⊤)
   -- ISqFillBool {b00} l r u d i j θ = {!tt!}
