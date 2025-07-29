@@ -202,9 +202,10 @@ module SqFillNonDep where
 
   if_then_else_end : I → I → I → I
   -- this is the one that compiles to j or k when i is i0 or i1
-  if i then j else k end = ((~ i) ∧ k) ∨ (i ∧ j)
+  -- if i then j else k end = ((~ i) ∧ k) ∨ (i ∧ j)
   -- if i then j else k end = (k ∨ i) ∧ (j ∨ ~ i)
   -- if i then j else k end = (k ∧ ~ i) ∨ ((i ∨ k) ∧ j)
+  if i then j else k end = (k ∧ (~ i ∨ j)) ∨ (i ∧ j)
   -- if i then j else k end = (i ∨ k) ∧ (j ∨ ~ i)
 
   if1_then_else_end : I → I → I → I
@@ -235,7 +236,6 @@ module SqFillNonDep where
   sqfillSigmaAB {lu} {ld} l {ru} {rd} r u d i j .snd =
     hSqFillB (sqfillSigmaAB l r u d i j .proj₁)
       {a₀₀ = lub'} {a₀₁ = ldb'} lb' {a₁₀ = rub'} {a₁₁ = rdb'} rb' ub' db' i {!j!}
-      -- {!!} {!!} {!!} {!!} {!!} {!!}
     where
       sqa : Square (cong fst l) (cong fst r) (cong fst u) (cong fst d)
       sqa = hSqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d)
@@ -245,8 +245,8 @@ module SqFillNonDep where
 
       spread : (i j i' j' : I) → sqa i j ≡ sqa i' j'
       -- spread i j i' j' k = sqa (if1 k then i' else i end) (if1 k then j' else j end)
-      -- spread i j i' j' k = sqa (if k then i' else i end) (if k then j' else j end)
-      spread i j i' j' k = sqa (if' k then i' else i end) (if' k then j' else j end)
+      spread i j i' j' k = sqa (if k then i' else i end) (if k then j' else j end)
+      -- spread i j i' j' k = sqa (if' k then i' else i end) (if' k then j' else j end)
 
       -- spreadRegular : (i j : I) → spread i j i j ≡ refl
       -- spreadRegular i j = refl
@@ -257,8 +257,9 @@ module SqFillNonDep where
       -- lub' = transport (λ k → B (spread i0 i0 i j k)) lub
       -- lub' = transport (λ k → B (sqa (i ∧ k) (j ∧ k))) lub
       lub' = transp (λ k → B (spread i0 i0 i j k)) (~ i ∧ ~ j) lub
+      -- lub' = transp (λ k → B (spread i0 i0 i j k)) (~ i ∧ ~ j) lub
       LemmaLU : PathP (λ k → B (spread i0 i0 i j k)) lub lub'
-      LemmaLU = {!transp (λ k → B )!}
+      LemmaLU k = transp (λ l → B (spread i0 i0 i j (k ∧ l))) (~ k ∨ (~ i ∧ ~ j)) lub
 
       ldb : B (fst ld)
       ldb = snd ld
@@ -266,7 +267,7 @@ module SqFillNonDep where
       -- ldb' = transport (λ k → B (sqa (i ∧ k) (~ k ∨ j))) ldb
       ldb' = transp (λ k → B (spread i0 i1 i j k)) (~ i ∧ j) ldb
       LemmaLD : PathP (λ k → B (spread i0 i1 i j k)) ldb ldb'
-      LemmaLD = {!!}
+      LemmaLD k = transp (λ l → B (spread i0 i1 i j (k ∧ l))) (~ k ∨ (~ i ∧ j)) ldb
 
       lb : PathP (λ j → B (sqa i0 j)) lub ldb
       lb = cong snd l
@@ -278,14 +279,14 @@ module SqFillNonDep where
       rub' : B (sqa i j)
       rub' = transp (λ k → B (spread i1 i0 i j k)) (i ∧ ~ j) rub
       LemmaRU : PathP (λ k → B (spread i1 i0 i j k)) rub rub'
-      LemmaRU = {!!}
+      LemmaRU k = transp (λ l → B (spread i1 i0 i j (k ∧ l))) (~ k ∨ ( i ∧ ~ j)) rub
 
       rdb : B (fst rd)
       rdb = snd rd
       rdb' : B (sqa i j)
       rdb' = transp (λ k → B (spread i1 i1 i j k)) (i ∧ j) rdb
       LemmaRD : PathP (λ k → B (spread i1 i1 i j k)) rdb rdb'
-      LemmaRD = {!!}
+      LemmaRD k = transp (λ l → B (spread i1 i1 i j (k ∧ l))) (~ k ∨ ( i ∧   j)) rdb
 
       rb : PathP (λ j → B (sqa i1 j)) rub rdb
       rb = cong snd r
@@ -338,8 +339,8 @@ module SqFillNonDep where
       --     j' (i' = i1) → LemmaRD j'
       --   }) (db i')
 
-      -- sqb' : B (sqa i j)
-      -- sqb' = hSqFillB (sqfillSigmaAB l r u d i j .fst) {a₀₀ = lub'} {a₀₁ = ldb'} lb' {a₁₀ = rub'} {a₁₁ = rdb'} rb' ub' db' i j
+      sqb' : B (sqa i j)
+      sqb' = hSqFillB (sqfillSigmaAB l r u d i j .fst) {a₀₀ = lub'} {a₀₁ = ldb'} lb' {a₁₀ = rub'} {a₁₁ = rdb'} rb' ub' db' i j
 
   --   -- either we fill the general square at B (αij) for any i j (we need to transport wiggle each side up to i,j)
   --   sqfillB (sqfillSigmaAB l r u d i j .proj₁) {!fromPathP (cong snd l)!} {!!} {!!} {!!} i {!!}
