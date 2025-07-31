@@ -273,6 +273,7 @@ module SqFillNonDep where
       lb = cong snd l
       lb' : lub' ≡ ldb'
       lb' j' = transp (λ k → B (spread i0 j' i j k)) (~ i ∧ (if  j' then j else ~ j end)) (lb j')
+      -- lb' j' = transp (λ k → B (spread i0 j' i j k)) (~ i) (lb j')
 
       rub : B (fst ru)
       rub = snd ru
@@ -341,6 +342,32 @@ module SqFillNonDep where
 
       sqb' : B (sqa i j)
       sqb' = hSqFillB (sqfillSigmaAB l r u d i j .fst) {a₀₀ = lub'} {a₀₁ = ldb'} lb' {a₁₀ = rub'} {a₁₁ = rdb'} rb' ub' db' i j
+
+      -- eg: when i = j = i0, a : A i0 i0 should be path-equivalent to sqa i0 i0
+      -- lemmaUL : PartialP (~ i ∧ ~ j) (λ{(i = i0) (j = i0) → a ≡ sqa i j})
+      -- lemmaUL (i = i0) (j = i0) = transport-filler _ a
+      -- lemmaDL : PartialP (~ i ∧   j) (λ{(i = i0) (j = i1) → a ≡ sqa i j})
+      -- lemmaDL (i = i0) (j = i1) = transport-filler _ a
+      -- lemmaUR : PartialP (  i ∧ ~ j) (λ{(i = i1) (j = i0) → a ≡ sqa i j})
+      -- lemmaUR (i = i1) (j = i0) = transport-filler _ a
+      -- lemmaDR : PartialP (  i ∧   j) (λ{(i = i1) (j = i1) → a ≡ sqa i j})
+      -- lemmaDR (i = i1) (j = i1) = transport-filler _ a
+
+      -- lemmaL : PartialP (~ i) (λ {(i = i0) → a ≡ sqa i j})
+      -- lemmaL (i = i0) = ≡spread i j a
+
+      -- their spread i j i' j' : A i j → A i' j'
+      -- ≡spread i j a : a ≡ spread i j i j a
+      -- lemmaLB : PartialP (~ i) (λ {(i = i0) → lb j ≡ lb' j})
+      -- lemmaLB (i = i0) = λ k → {!!}
+      -- lemmaLB (i = i0) = λ k → {!!}
+      -- lemmaLB (i = i0) = λ k → transp (λ l → B (spread i (k ∧ l) i j (k ∧ l))) (~ k ∨ (~ i ∧ (if l then ~ j else j end))) ldb
+      -- lemmaRB : PartialP (  i) (λ {(i = i1) → PathP (λ k → B i j ((≡spread i j a) k)) (r j a) (rb j)})
+      -- lemmaRB (i = i1) = λ k → r j (≡spread i j a k)
+      -- lemmaUB : PartialP (~ j) (λ {(j = i0) → PathP (λ k → B i j ((≡spread i j a) k)) (u i a) (ub i)})
+      -- lemmaUB (j = i0) = λ k → u i (≡spread i j a k)
+      -- lemmaDB : PartialP (  j) (λ {(j = i1) → PathP (λ k → B i j ((≡spread i j a) k)) (d i a) (db i)})
+      -- lemmaDB (j = i1) = λ k → d i (≡spread i j a k)
 
   --   -- either we fill the general square at B (αij) for any i j (we need to transport wiggle each side up to i,j)
   --   sqfillB (sqfillSigmaAB l r u d i j .proj₁) {!fromPathP (cong snd l)!} {!!} {!!} {!!} i {!!}
@@ -498,8 +525,14 @@ module SqFillNonDep where
   PathPToLine : ∀ A B → (P : PathP (λ i → Type) A B) → I → Type
   PathPToLine A B P i = P i
 
-  hSqFillPath : {a : A} → hSqFill (a ≡ a)
-  hSqFillPath {a} {lu} {ld} l {ru} {rd} r u d i j =
+  -- hSqFillPath : {a : A} → hSqFill (a ≡ a)
+  -- hSqFillPath {a} {lu} {ld} l {ru} {rd} r u d i j =
+  --   hcomp (λ k → λ { (i = i0) → hSqFillA lu (l j) refl refl k
+  --                 ; (i = i1) → hSqFillA lu (r j) refl refl k
+  --                 ; (j = i0) → hSqFillA lu (u i) refl refl k
+  --                 ; (j = i1) → hSqFillA lu (d i) refl refl k}) lu
+  hSqFillPath : {a b : A} → hSqFill (a ≡ b)
+  hSqFillPath {_} {_} {lu} l r u d i j =
     hcomp (λ k → λ { (i = i0) → hSqFillA lu (l j) refl refl k
                   ; (i = i1) → hSqFillA lu (r j) refl refl k
                   ; (j = i0) → hSqFillA lu (u i) refl refl k
@@ -531,8 +564,8 @@ module _ where
   if_then_else_end : I → I → I → I
   -- if k then i else j end = ((~ k) ∧ j) ∨ (k ∧ i)
   -- if k then i else j end = (j ∨ ~ k) ∧ (i ∨ k)
-  -- if i then j else k end = (k ∧ ~ i) ∨ ((i ∨ k) ∧ j)
-  if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
+  if i then j else k end = (k ∧ ~ i) ∨ ((i ∨ k) ∧ j)
+  -- if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
 
   {-# INLINE if_then_else_end #-}
 
@@ -655,16 +688,23 @@ module _ where
       isLeft (inl x) = ⊤
       isLeft (inr y) = ⊥
 
+  -- Cover' : (i j i' j' : I) (c : cpd A A i j) (c' : cpd A A i' j') → Type
+  -- Cover' i j i' j' (inl x) (inl y) = PathP (λ k → A (if k then i' else i end) (if k then j' else j end)) x y
+  -- Cover' i j i' j' (inr x) (inr y) = PathP (λ k → A (if k then i' else i end) (if k then j' else j end)) x y
+  -- Cover' i j i' j' _ _ = ⊥
+
   Cover : {i j i' j' : I} (c : cpd A A i j) (c' : cpd A A i' j') → Type
   Cover {i} {j} {i'} {j'} (inl x) (inl y) = PathP (λ k → A (if k then i' else i end) (if k then j' else j end)) x y
-  -- Cover {i} {j} {i'} {j'} (inl x) (inl y) = PathP (λ k → A ((k ∨ i) ∧ (~ k ∨ i')) ((k ∨ j) ∧ (~ k ∨ j'))) x y
   Cover {i} {j} {i'} {j'} (inr x) (inr y) = PathP (λ k → A (if k then i' else i end) (if k then j' else j end)) x y
-  -- Cover {i} {j} {i'} {j'} (inr x) (inr y) = PathP (λ k → A ((k ∨ i) ∧ (~ k ∨ i')) ((k ∨ j) ∧ (~ k ∨ j'))) x y
   Cover {i} {j} {i'} {j'} _ _ = ⊥
 
   reflCode : (i j : I) (c : cpd A A i j) → Cover c c
   reflCode i j (inl x) = λ k → x
   reflCode i j (inr x) = λ k → x
+
+  if'_then_else_end : I → I → I → I
+  -- if' i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j) ∨ ((~ i) ∧ k) ∨ (i ∧ j)
+  if' i then j else k end =  ((~ i) ∧ k) ∨ (i ∧ j)
 
   encode : {i j i' j' : I} {c : cpd A A i j} {c' : cpd A A i' j'} (p : PathP (λ k → cpd A A (if k then i' else i end) (if k then j' else j end)) c c') → Cover c c'
   encode {i} {j} {i'} {j'} {c} p = transport (λ k → Cover c (p k)) (reflCode i j c)
@@ -673,20 +713,42 @@ module _ where
   decode {c = inl x} {c' = inl y} p = λ k → inl (p k)
   decode {c = inr x} {c' = inr y} p = λ k → inr (p k)
 
-  decodeEncode : {i j i' j' : I} {c : cpd A A i j} {c' : cpd A A i' j'} (p : PathP (λ k → cpd A A (if k then i' else i end) (if k then j' else j end)) c c') → decode (encode p) ≡ p
+
+  decodeEncode : {i j i' j' : I} {c : cpd A A i j} {c' : cpd A A i' j'} (p : PathP (λ k → cpd A A (if k then i' else i end) (if k then j' else j end)) c c')
+                 → decode {c = c} {c' = c'} (encode p) ≡ p
   -- decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
   -- decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
-  -- decodeEncode {c = inl x} = JDep {!!} (λ c' p → PathP {!!} (decode (encode p)) p) (cong (cong inl) (transportRefl refl))
+  decodeEncode {i} {j} {i'} {j'} {c = inl x} {c'} p =
+    -- JDep (λ y p z q → decode (encode q) ≡ q) {!!} {!!} {!!}
+    transport
+    (λ k → decode {c = inl x} {c' = p k} (encode {c = inl x} {c' = p k} (λ k' → p (k ∧ k'))) ≡ λ k' → p (k ∧ k'))
+    λ k k' → {!transp (λ k'' → cpd A A (if (k' ∧ k'') then i else i end) (if (k' ∧ k'') then j else j end)) (~ k') (inl x)!}
+    -- k = 0 then A i j
+    -- k = 1 then A i j
+    -- λ k k' → inl {!transp (λ k → A (if (k ∧ k') then (if i0 then i' else i end) else i end) (if (k ∧ k') then (if i0 then j' else j end) else j end)) i0 x!}
+    -- (λ k k' → inl (comp
+    --                 (λ k →
+    --                    A if k ∧ k' then if i0 then i' else i end else i end
+    --                    if k ∧ k' then if i0 then j' else j end else j end)
+    --                 (λ where
+    --                   l (k' = i0) → {!!}) x))
+    -- (λ k → {!transport-filler!})
+  decodeEncode {c = inr x} p =
+    transport
+    (λ k → decode {c = inr x} {c' = p k} (encode {c = inr x} {c' = p k} (λ k' → p (k ∧ k'))) ≡ λ k' → p (k ∧ k'))
+    {!!}
   -- decodeEncode {c = inr x} = JDep {!!} (λ c' p → PathP {!!} (decode (encode p)) p) (cong (cong inr) (transportRefl refl))
 
   sqFillCoproduct : sqFill (cpd A A)
   sqFillCoproduct {inl lu} {inl ld} l {inl ru} {inl rd} r u d i j =
-    (comp {!!} (λ where
+    (comp (λ k → cpd A A i j)
+      (λ where
         k (i = i0) → decodeEncode l k j
         k (i = i1) → decodeEncode r k j
         k (j = i0) → decodeEncode u k i
         k (j = i1) → decodeEncode d k i)
       (inl {A} {A} (sqFillA (encode l) (encode r) (encode u) (encode d) i j)))
+      -- {! inl {A} {A} (sqFillA (encode l) (encode r) (encode u) (encode d) i j) !}
   sqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j = {!!}
     -- (hcomp (λ where
     --     k (i = i0) → decodeEncode l k j
@@ -703,12 +765,13 @@ module _ where
   -- sqFillCoproduct {_} {_} _ {inl x} {inr y} r _ _ = ⊥-elim (inl≠inr x y r)
   -- sqFillCoproduct {_} {_} _ {inr x} {inl y} r _ _ = ⊥-elim (inl≠inr y x (λ k → r (~ k)))
 
-  -- sqFillPath : {a : A} → sqFill (a ≡ a)
-  -- sqFillPath {a} {lu} {ld} l {ru} {rd} r u d i j =
-  --   comp (λ k → λ { (i = i0) → sqFillA lu (l j) refl refl k
-  --                 ; (i = i1) → sqFillA lu (r j) refl refl k
-  --                 ; (j = i0) → sqFillA lu (u i) refl refl k
-  --                 ; (j = i1) → sqFillA lu (d i) refl refl k}) lu
+  sqFillPath : {a : (i j : I) → A i j} → sqFill (λ i j → a i j ≡ a i j)
+  sqFillPath {a} {lu} {ld} l {ru} {rd} r u d i j =
+    comp (λ k → a (i ∧ k) (j ∧ k) ≡ a (i ∧ k) (j ∧ k))
+         (λ k → λ { (i = i0) → {!sqFillA (λ i → lu i)!}
+                  ; (i = i1) → {!!}
+                  ; (j = i0) → {!!}
+                  ; (j = i1) → {!!}}) lu
 
 -- third version
 module ISqFill where
