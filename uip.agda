@@ -234,8 +234,9 @@ module SqFillNonDep where
   sqfillSigmaAB : hSqFill (Σ[ a ∈ A ] B a)
   sqfillSigmaAB l r u d i j .fst = hSqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j
   sqfillSigmaAB {lu} {ld} l {ru} {rd} r u d i j .snd =
-    hSqFillB (sqfillSigmaAB l r u d i j .proj₁)
-      {a₀₀ = lub'} {a₀₁ = ldb'} lb' {a₁₀ = rub'} {a₁₁ = rdb'} rb' ub' db' i {!j!}
+    outS (sqb i j)
+    -- hSqFillB (sqfillSigmaAB l r u d i j .proj₁)
+    --   {a₀₀ = lub'} {a₀₁ = ldb'} lb' {a₁₀ = rub'} {a₁₁ = rdb'} rb' ub' db' i {!j!}
     where
       sqa : Square (cong fst l) (cong fst r) (cong fst u) (cong fst d)
       sqa = hSqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d)
@@ -254,55 +255,128 @@ module SqFillNonDep where
       lub : B (sqa i0 i0)
       lub = snd lu
       lub' : B (sqa i j)
-      -- lub' = transport (λ k → B (spread i0 i0 i j k)) lub
-      -- lub' = transport (λ k → B (sqa (i ∧ k) (j ∧ k))) lub
-      lub' = transp (λ k → B (spread i0 i0 i j k)) (~ i ∧ ~ j) lub
       -- lub' = transp (λ k → B (spread i0 i0 i j k)) (~ i ∧ ~ j) lub
+      lub' = transport (λ k → B (spread i0 i0 i j k)) lub
       LemmaLU : PathP (λ k → B (spread i0 i0 i j k)) lub lub'
-      LemmaLU k = transp (λ l → B (spread i0 i0 i j (k ∧ l))) (~ k ∨ (~ i ∧ ~ j)) lub
+      -- LemmaLU k = transp (λ l → B (spread i0 i0 i j (k ∧ l))) (~ k ∨ (~ i ∧ ~ j)) lub
+      LemmaLU k = transp (λ l → B (spread i0 i0 i j (k ∧ l))) (~ k) lub
 
       ldb : B (fst ld)
       ldb = snd ld
       ldb' : B (sqa i j)
-      -- ldb' = transport (λ k → B (sqa (i ∧ k) (~ k ∨ j))) ldb
-      ldb' = transp (λ k → B (spread i0 i1 i j k)) (~ i ∧ j) ldb
+      -- ldb' = transp (λ k → B (spread i0 i1 i j k)) (~ i ∧ j) ldb
+      ldb' = transport (λ k → B (spread i0 i1 i j k)) ldb
       LemmaLD : PathP (λ k → B (spread i0 i1 i j k)) ldb ldb'
-      LemmaLD k = transp (λ l → B (spread i0 i1 i j (k ∧ l))) (~ k ∨ (~ i ∧ j)) ldb
+      -- LemmaLD k = transp (λ l → B (spread i0 i1 i j (k ∧ l))) (~ k ∨ (~ i ∧ j)) ldb
+      LemmaLD k = transp (λ l → B (spread i0 i1 i j (k ∧ l))) (~ k) ldb
 
-      lb : PathP (λ j → B (sqa i0 j)) lub ldb
+      -- lb : PathP (λ j → B (sqa i0 j)) lub ldb
+      lb : PathP (λ k → B (spread i0 i0 i0 i1 k)) lub ldb
       lb = cong snd l
-      lb' : lub' ≡ ldb'
-      lb' j' = transp (λ k → B (spread i0 j' i j k)) (~ i ∧ (if  j' then j else ~ j end)) (lb j')
-      -- lb' j' = transp (λ k → B (spread i0 j' i j k)) (~ i) (lb j')
+      -- lb' : lub' ≡ ldb'
+      -- lb' : lub' ≡ ldb'
+      lb' : PathP (λ k → B (spread i j i j k)) lub' ldb'
+      -- lb' j' = transp (λ k → B (spread i0 j' i j k)) (~ i ∧ (if  j' then j else ~ j end)) (lb j')
+      lb' j' = comp (λ k → B (spread (k ∧ i) (k ∧ j) (k ∧ i) (~ k ∨ j) j'))
+                    (λ where
+                      k (j' = i0) → LemmaLU k
+                      k (j' = i1) → LemmaLD k) (lb j')
+      LemmaL : PathP (λ k' → PathP (λ k → B (spread (k' ∧ i) (k' ∧ j) (k' ∧ i) (~ k' ∨ j) k)) (LemmaLU k') (LemmaLD k')) lb lb'
+      LemmaL k' = transport-filler (λ k' → PathP (λ k → B (spread (k' ∧ i) (k' ∧ j) (k' ∧ i) (~ k' ∨ j) k)) (LemmaLU k') (LemmaLD k')) lb k'
 
       rub : B (fst ru)
       rub = snd ru
       rub' : B (sqa i j)
-      rub' = transp (λ k → B (spread i1 i0 i j k)) (i ∧ ~ j) rub
+      -- rub' = transp (λ k → B (spread i1 i0 i j k)) (i ∧ ~ j) rub
+      rub' = transport (λ k → B (spread i1 i0 i j k)) rub
       LemmaRU : PathP (λ k → B (spread i1 i0 i j k)) rub rub'
-      LemmaRU k = transp (λ l → B (spread i1 i0 i j (k ∧ l))) (~ k ∨ ( i ∧ ~ j)) rub
+      -- LemmaRU k = transp (λ l → B (spread i1 i0 i j (k ∧ l))) (~ k ∨ ( i ∧ ~ j)) rub
+      LemmaRU k = transp (λ l → B (spread i1 i0 i j (k ∧ l))) (~ k) rub
 
       rdb : B (fst rd)
       rdb = snd rd
       rdb' : B (sqa i j)
-      rdb' = transp (λ k → B (spread i1 i1 i j k)) (i ∧ j) rdb
+      -- rdb' = transp (λ k → B (spread i1 i1 i j k)) (i ∧ j) rdb
+      rdb' = transport (λ k → B (spread i1 i1 i j k)) rdb
       LemmaRD : PathP (λ k → B (spread i1 i1 i j k)) rdb rdb'
-      LemmaRD k = transp (λ l → B (spread i1 i1 i j (k ∧ l))) (~ k ∨ ( i ∧   j)) rdb
+      -- LemmaRD k = transp (λ l → B (spread i1 i1 i j (k ∧ l))) (~ k ∨ ( i ∧   j)) rdb
+      LemmaRD k = transp (λ l → B (spread i1 i1 i j (k ∧ l))) (~ k) rdb
 
       rb : PathP (λ j → B (sqa i1 j)) rub rdb
       rb = cong snd r
       rb' : rub' ≡ rdb'
-      rb' j' = transp (λ k → B (spread i1 j' i j k)) (i ∧ (if  j' then j else ~ j end)) (rb j')
+      -- rb' j' = transp (λ k → B (spread i1 j' i j k)) (i ∧ (if  j' then j else ~ j end)) (rb j')
+      -- rb' j' = transport (λ k → B (spread i1 j' i j k)) (rb j')
+      rb' j' = comp (λ k → B (spread (~ k ∨ i) (k ∧ j) (~ k ∨ i) (~ k ∨ j) j'))
+                    (λ where
+                      k (j' = i0) → LemmaRU k
+                      k (j' = i1) → LemmaRD k) (rb j')
+      LemmaR : PathP (λ k' → PathP (λ k → B (spread (~ k' ∨ i) (k' ∧ j) (~ k' ∨ i) (~ k' ∨ j) k)) (LemmaRU k') (LemmaRD k')) rb rb'
+      LemmaR k' = transport-filler (λ k' → PathP (λ k → B (spread (~ k' ∨ i) (k' ∧ j) (~ k' ∨ i) (~ k' ∨ j) k)) (LemmaRU k') (LemmaRD k')) rb k'
 
       ub : PathP (λ i → B (sqa i i0)) lub rub
       ub = cong snd u
       ub' : lub' ≡ rub'
-      ub' i' = transp (λ k → B (spread i' i0 i j k)) ((if  i' then i else ~ i end) ∧ ~ j) (ub i')
+      -- ub' i' = transp (λ k → B (spread i' i0 i j k)) ((if  i' then i else ~ i end) ∧ ~ j) (ub i')
+      -- ub' i' = transport (λ k → B (spread i' i0 i j k)) (ub i')
+      ub' i' = comp (λ k → B (spread (k ∧ i) (k ∧ j) (~ k ∨ i) (k ∧ j) i'))
+                    (λ where
+                      k (i' = i0) → LemmaLU k
+                      k (i' = i1) → LemmaRU k) (ub i')
+      LemmaU : PathP (λ k' → PathP (λ k → B (spread (k' ∧ i) (k' ∧ j) (~ k' ∨ i) (k' ∧ j) k)) (LemmaLU k') (LemmaRU k')) ub ub'
+      LemmaU k' = transport-filler (λ k' → PathP (λ k → B (spread (k' ∧ i) (k' ∧ j) (~ k' ∨ i) (k' ∧ j) k)) (LemmaLU k') (LemmaRU k')) ub k'
 
       db : PathP (λ i → B (sqa i i1)) ldb rdb
       db = cong snd d
       db' : ldb' ≡ rdb'
-      db' i' = transp (λ k → B (spread i' i1 i j k)) ((if  i' then i else ~ i end) ∧ j) (db i')
+      -- db' i' = transp (λ k → B (spread i' i1 i j k)) ((if  i' then i else ~ i end) ∧ j) (db i')
+      -- db' i' = transport (λ k → B (spread i' i1 i j k)) (db i')
+      db' i' = comp (λ k → B (spread (k ∧ i) (~ k ∨ j) (~ k ∨ i) (~ k ∨ j) i'))
+                    (λ where
+                      k (i' = i0) → LemmaLD k
+                      k (i' = i1) → LemmaRD k) (db i')
+      LemmaD : PathP (λ k' → PathP (λ k → B (spread (k' ∧ i) (~ k' ∨ j) (~ k' ∨ i) (~ k' ∨ j) k)) (LemmaLD k') (LemmaRD k')) db db'
+      LemmaD k' = transport-filler (λ k' → PathP (λ k → B (spread (k' ∧ i) (~ k' ∨ j) (~ k' ∨ i) (~ k' ∨ j) k)) (LemmaLD k') (LemmaRD k')) db k'
+
+      -- -- this cannot possibly have eta.
+      -- -- which means [transp]-ing the hollow heterogeneous square (i' j' : I) → B (sqa i' j')
+      -- -- to the hollow homogeneous square (i' j' : I) → B (sqa i j)
+      -- -- cannot keep the (i,j)-th coordinate constant.
+      -- eqi : I → I → I
+      -- eqi a b = (a ∧ b) ∨ (~ a ∧ ~ b)
+
+      sqb-hollow : (i' j' : I) → Partial (i' ∨ j' ∨ ~ i' ∨ ~ j') (B (sqa i' j'))
+      sqb-hollow i' j' (i' = i0) = l j' .snd
+      sqb-hollow i' j' (i' = i1) = r j' .snd
+      sqb-hollow i' j' (j' = i0) = u i' .snd
+      sqb-hollow i' j' (j' = i1) = d i' .snd
+
+      sqb'-hollow : (i' j' : I) → Partial (i' ∨ j' ∨ ~ i' ∨ ~ j') (B (sqa i j))
+      sqb'-hollow i' j' (i' = i0) = lb' j'
+      sqb'-hollow i' j' (i' = i1) = rb' j'
+      sqb'-hollow i' j' (j' = i0) = ub' i'
+      sqb'-hollow i' j' (j' = i1) = db' i'
+
+      sqb' : (i' j' : I) → (B (sqa i j)) [ (i' ∨ j' ∨ ~ i' ∨ ~ j') ↦ sqb'-hollow i' j' ]
+      sqb' i' j' = inS (hSqFillB (sqa i j) lb' rb' ub' db' i' j')
+
+      -- -- this is the desired heterogeneous square that aligns with the required boundaries.
+      -- sqb : (i' j' : I) → (B (sqa i' j')) [ ( i' ∨ ~ i' ∨ j' ∨ ~ j' ) ↦ sqb-hollow i' j' ]
+      -- sqb i' j' = inS {!transp (λ k → B (spread i j i' j' k)) ((eqi i i') ∧ (eqi j j')) ? !}
+
+
+      -- sqb'oneshot : (i' j' : I) → B (sqa i j)
+      -- sqb'oneshot i' j' = transp (λ k → B (spread i' j' i j k)) ((eqi i i') ∧ (eqi j j')) (sqb i' j')
+
+      -- sqb' = hSqFillB (sqfillSigmaAB l r u d i j .fst) {a₀₀ = lub'} {a₀₁ = ldb'} lb' {a₁₀ = rub'} {a₁₁ = rdb'} rb' ub' db' i j
+      sqb : (i' j' : I) → (B (sqa i' j')) [ ( i' ∨ ~ i' ∨ j' ∨ ~ j' ) ↦ sqb-hollow i' j' ]
+      sqb i' j' = inS (comp (λ k → B (spread i j i' j' k)) (
+                      λ where
+                        k (i' = i0) → LemmaL (~ k) j'
+                        k (i' = i1) → LemmaR (~ k) j'
+                        k (j' = i0) → LemmaU (~ k) i'
+                        k (j' = i1) → LemmaD (~ k) i') (outS (sqb' i' j')))
+
 
       {-
         lub'
@@ -340,8 +414,6 @@ module SqFillNonDep where
       --     j' (i' = i1) → LemmaRD j'
       --   }) (db i')
 
-      sqb' : B (sqa i j)
-      sqb' = hSqFillB (sqfillSigmaAB l r u d i j .fst) {a₀₀ = lub'} {a₀₁ = ldb'} lb' {a₁₀ = rub'} {a₁₁ = rdb'} rb' ub' db' i j
 
       -- eg: when i = j = i0, a : A i0 i0 should be path-equivalent to sqa i0 i0
       -- lemmaUL : PartialP (~ i ∧ ~ j) (λ{(i = i0) (j = i0) → a ≡ sqa i j})
