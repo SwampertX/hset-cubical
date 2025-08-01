@@ -729,13 +729,28 @@ module _ where
   sqFillCoproduct {inl lu} {inl ld} l {inl ru} {inl rd} r u d i j =
     (comp (λ k → cpd A A i j)
       (λ where
-        k (i = i0) → decodeEncode l k j
-        k (i = i1) → decodeEncode r k j
-        k (j = i0) → decodeEncode u k i
-        k (j = i1) → decodeEncode d k i)
-      (inl {A} {A} (sqFillA (encode l) (encode r) (encode u) (encode d) i j)))
+        k (i = i0) → decodeEncode {c = l i0} {c' = l i1} l k j
+        k (i = i1) → decodeEncode {c = r i0} {c' = r i1} r k j
+        k (j = i0) → decodeEncode {c = u i0} {c' = u i1} u k i
+        k (j = i1) → decodeEncode {c = d i0} {c' = d i1} d k i)
+      (inl {A} {A} (sqFillA
+           (encode {c = l i0} {c' = l i1} l)
+           (encode {c = r i0} {c' = r i1} r)
+           (encode {c = u i0} {c' = u i1} u)
+           (encode {c = d i0} {c' = d i1} d) i j)))
       -- {! inl {A} {A} (sqFillA (encode l) (encode r) (encode u) (encode d) i j) !}
-  sqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j = {!!}
+  sqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j =
+    (comp (λ k → cpd A A i j)
+      (λ where
+        k (i = i0) → decodeEncode {c = l i0} {c' = l i1} l k j
+        k (i = i1) → decodeEncode {c = r i0} {c' = r i1} r k j
+        k (j = i0) → decodeEncode {c = u i0} {c' = u i1} u k i
+        k (j = i1) → decodeEncode {c = d i0} {c' = d i1} d k i)
+      (inr {A} {A} (sqFillA
+           (encode {c = l i0} {c' = l i1} l)
+           (encode {c = r i0} {c' = r i1} r)
+           (encode {c = u i0} {c' = u i1} u)
+           (encode {c = d i0} {c' = d i1} d) i j)))
     -- (hcomp (λ where
     --     k (i = i0) → decodeEncode l k j
     --     k (i = i1) → decodeEncode r k j
