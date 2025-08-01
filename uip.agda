@@ -444,7 +444,7 @@ module SqFillNonDep where
   -- decode {inr x} {inr y} = J (λ y _ → inr x ≡ inr y) refl
 
   decodeEncode : {c c' : A + A} (p : c ≡ c') → decode (encode p) ≡ p
-  decodeEncode {inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
+  decodeEncode {inl x} = J (λ c' p → decode (encode p) ≡ p) λ i → λ j → inl (transportRefl (refl {x = x}) i j)
   decodeEncode {inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
 
   -- TODO: this has the right type already (A + A) but boundary conditions are off
@@ -698,15 +698,17 @@ module _ where
   decode {c = inr x} {c' = inr y} p = λ k → inr (p k)
 
 
-  decodeEncode : {i j i' j' : I} {c : cpd A A i j} {c' : cpd A A i' j'} (p : PathP (λ k → cpd A A (if k then i' else i end) (if k then j' else j end)) c c')
+  decodeEncode : {i j i' j' : I} {c : cpd A A i j} {c' : cpd A A i' j'}
+                 (p : PathP (λ k → cpd A A (if k then i' else i end) (if k then j' else j end)) c c')
                  → decode {c = c} {c' = c'} (encode p) ≡ p
+  -- decodeEncode {inl x} = J (λ c' p → decode (encode p) ≡ p) λ i → λ j → inl (transportRefl (refl {x = x}) i j)
   -- decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
   -- decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
   decodeEncode {i} {j} {i'} {j'} {c = inl x} {c'} p =
-    -- JDep (λ y p z q → decode (encode q) ≡ q) {!!} {!!} {!!}
     transport
     (λ k → decode {c = inl x} {c' = p k} (encode {c = inl x} {c' = p k} (λ k' → p (k ∧ k'))) ≡ λ k' → p (k ∧ k'))
-    λ k k' → {!transp (λ k'' → cpd A A (if (k' ∧ k'') then i else i end) (if (k' ∧ k'') then j else j end)) (~ k') (inl x)!}
+    (λ k → λ k' → inl (transportRefl (refl {x = x}) k k'))
+
     -- k = 0 then A i j
     -- k = 1 then A i j
     -- λ k k' → inl {!transp (λ k → A (if (k ∧ k') then (if i0 then i' else i end) else i end) (if (k ∧ k') then (if i0 then j' else j end) else j end)) i0 x!}
@@ -717,10 +719,10 @@ module _ where
     --                 (λ where
     --                   l (k' = i0) → {!!}) x))
     -- (λ k → {!transport-filler!})
-  decodeEncode {c = inr x} p =
+  decodeEncode {c = inr x} {c'} p =
     transport
     (λ k → decode {c = inr x} {c' = p k} (encode {c = inr x} {c' = p k} (λ k' → p (k ∧ k'))) ≡ λ k' → p (k ∧ k'))
-    {!!}
+    (λ k → λ k' → inr (transportRefl (refl {x = x}) k k'))
   -- decodeEncode {c = inr x} = JDep {!!} (λ c' p → PathP {!!} (decode (encode p)) p) (cong (cong inr) (transportRefl refl))
 
   sqFillCoproduct : sqFill (cpd A A)
