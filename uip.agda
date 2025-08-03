@@ -608,8 +608,8 @@ module _ where
       b : SquareP (λ i' j' → B i' j' (sqa i' j')) lb rb ub db
       b = sqFillB sqa lb rb ub db
 
-      -- now we have a square in (λ i' j' → B i' j' (sqa i' j'))
-      -- but it is not definitionally the square we want: (B i j a)
+      -- now we have a heterogenous square in (λ i' j' → B i' j' (sqa i' j'))
+      -- but it is not definitionally the homogeneous square we want: (B i j a)
       -- a and (sqa i j) are path equivalent: sqa is obtained via transporting a.
       -- we prove these equalities below.
 
@@ -626,6 +626,7 @@ module _ where
       -- lemmaL : PartialP (~ i) (λ {(i = i0) → a ≡ sqa i j})
       -- lemmaL (i = i0) = ≡spread i j a
 
+      -- is this possible to hold definitionally?
       lemmaLB : PartialP (~ i) (λ {(i = i0) → PathP (λ k → B i j ((≡spread i j a) k)) (l j a) (lb j)})
       lemmaLB (i = i0) = λ k → l j (≡spread i j a k)
       lemmaRB : PartialP (  i) (λ {(i = i1) → PathP (λ k → B i j ((≡spread i j a) k)) (r j a) (rb j)})
@@ -766,13 +767,118 @@ module _ where
   -- sqFillCoproduct {_} {_} _ {inl x} {inr y} r _ _ = ⊥-elim (inl≠inr x y r)
   -- sqFillCoproduct {_} {_} _ {inr x} {inl y} r _ _ = ⊥-elim (inl≠inr y x (λ k → r (~ k)))
 
-  sqFillPath : {a : (i j : I) → A i j} → sqFill (λ i j → a i j ≡ a i j)
-  sqFillPath {a} {lu} {ld} l {ru} {rd} r u d i j =
-    comp (λ k → a (i ∧ k) (j ∧ k) ≡ a (i ∧ k) (j ∧ k))
-         (λ k → λ { (i = i0) → {!sqFillA (λ i → lu i)!}
-                  ; (i = i1) → {!!}
-                  ; (j = i0) → {!!}
-                  ; (j = i1) → {!!}}) lu
+  -- sqFillPath : {a : (i j : I) → A i j} → sqFill (λ i j → a i j ≡ a i j)
+  -- sqFillPath {a} {lu} {ld} l {ru} {rd} r u d i j =
+  --   comp (λ k → a (i ∧ k) (j ∧ k) ≡ a (i ∧ k) (j ∧ k))
+  --        (λ k → λ { (i = i0) → {!sqFillA !}
+  --                 ; (i = i1) → {!!}
+  --                 ; (j = i0) → {!!}
+  --                 ; (j = i1) → {!!}}) lu
+    -- hcomp (λ k → λ { (i = i0) → sqFillA lu (l j) refl refl k
+    --               ; (i = i1) → sqFillA lu (r j) refl refl k
+    --               ; (j = i0) → sqFillA lu (u i) refl refl k
+    --               ; (j = i1) → sqFillA lu (d i) refl refl k}) lu
+  -- sqFillPath : {i j i' j' : I} {a : A i j} {b : A i' j'} → sqFill (λ _ _ → PathP (λ k → A (if k then i' else i end) (if k then j' else j end)) a b)
+  -- sqFillPath {a = a} {b} {lu} {ld} l {ru} {rd} r u d i j =
+  --   hcomp (λ k → λ { (i = i0) → {!sqFillA lu!}
+  --                 ; (i = i1) → {!!}
+  --                 ; (j = i0) → {!!}
+  --                 ; (j = i1) → {!!}}) lu
+  --
+
+  -- Given any i j i' j' square, we can always transport it to the 0 1 square, get a filling,
+  -- and then hcomp it back to our
+  lemma : (i j i' j' : I)
+          (lu : A i j) (ru : A i' j) (u : PathP (λ k → A (if k then i' else i end) j) lu ru)
+          (ld : A i j') (rd : A i' j') (d : PathP (λ k → A (if k then i' else i end) j') ld rd)
+          (l : PathP (λ k → A i (if k then j' else j end)) lu ld)
+          (r : PathP (λ k → A i' (if k then j' else j end)) ru rd)
+          → PathP (λ k' → PathP (λ k → A (if k' then i' else i end) (if k then j' else j end)) (u k') (d k')) l r
+  lemma i j i' j' lu ru u ld rd d l r ki kj = comp
+    (λ k → A (if ki then (~ k ∨ i') else (k ∧ i) end) (if kj then (~ k ∨ j') else (k ∧ j) end))
+    (λ where
+       k (ki = i0) → lemmal (~ k) kj
+       k (ki = i1) → lemmar (~ k) kj
+       k (kj = i0) → lemmau (~ k) ki
+       k (kj = i1) → lemmad (~ k) ki)
+    (sq' ki kj)
+      where
+        lu' : A i0 i0
+        -- YJ: I'm not sure why we can't set the cofibration to (i ∧ j).
+        -- lu' = transp (λ k → A (~ k ∧ i) (~ k ∧ j)) (i ∧ j) lu
+        lu' = transport (λ k → A (~ k ∧ i) (~ k ∧ j)) lu
+        lemmalu : PathP (λ k → A (~ k ∧ i) (~ k ∧ j)) lu lu'
+        lemmalu = transport-filler (λ k → A (~ k ∧ i) (~ k ∧ j)) lu
+        ru' : A i1 i0
+        ru' = transport (λ k → A (k ∨ i') (~ k ∧ j)) ru
+        lemmaru : PathP (λ k → A (k ∨ i') (~ k ∧ j)) ru ru'
+        lemmaru = transport-filler (λ k → A (k ∨ i') (~ k ∧ j)) ru
+        ld' : A i0 i1
+        ld' = transport (λ k → A (~ k ∧ i) (k ∨ j')) ld
+        lemmald : PathP (λ k → A (~ k ∧ i) (k ∨ j')) ld ld'
+        lemmald = transport-filler (λ k → A (~ k ∧ i) (k ∨ j')) ld
+        rd' : A i1 i1
+        rd' = transport (λ k → A (k ∨ i') (k ∨ j')) rd
+        lemmard : PathP (λ k → A (k ∨ i') (k ∨ j')) rd rd'
+        lemmard = transport-filler (λ k → A (k ∨ i') (k ∨ j')) rd
+
+        l' : PathP (λ j → A i0 j) lu' ld'
+        l' kj = comp (λ k → A (~ k ∧ i) (if kj then (k ∨ j') else (~ k ∧ j) end))
+                    (λ where
+                        k (kj = i0) → lemmalu k
+                        k (kj = i1) → lemmald k) (l kj)
+        lemmal : PathP (λ k → PathP (λ kj → A (~ k ∧ i) (if kj then (k ∨ j') else (~ k ∧ j) end)) (lemmalu k) (lemmald k)) l l'
+        lemmal = transport-filler (λ k → PathP (λ kj → A (~ k ∧ i) (if kj then (k ∨ j') else (~ k ∧ j) end)) (lemmalu k) (lemmald k)) l
+
+        r' : PathP (λ j → A i1 j) ru' rd'
+        r' kj = comp (λ k → A (k ∨ i') (if kj then (k ∨ j') else (~ k ∧ j) end))
+                    (λ where
+                        k (kj = i0) → lemmaru k
+                        k (kj = i1) → lemmard k) (r kj)
+        lemmar : PathP (λ k → PathP (λ kj → A (k ∨ i') (if kj then (k ∨ j') else (~ k ∧ j) end)) (lemmaru k) (lemmard k)) r r'
+        lemmar = transport-filler (λ k → PathP (λ kj → A (k ∨ i') (if kj then (k ∨ j') else (~ k ∧ j) end)) (lemmaru k) (lemmard k)) r
+
+        u' : PathP (λ i → A i i0) lu' ru'
+        u' ki = comp (λ k → A (if ki then (k ∨ i') else (~ k ∧ i) end) (~ k ∧ j))
+                    (λ where
+                        k (ki = i0) → lemmalu k
+                        k (ki = i1) → lemmaru k) (u ki)
+        lemmau : PathP (λ k → PathP (λ ki → A (if ki then (k ∨ i') else (~ k ∧ i) end) (~ k ∧ j)) (lemmalu k) (lemmaru k)) u u'
+        lemmau = transport-filler (λ k → PathP (λ ki → A (if ki then (k ∨ i') else (~ k ∧ i) end) (~ k ∧ j)) (lemmalu k) (lemmaru k)) u
+
+        d' : PathP (λ i → A i i1) ld' rd'
+        d' ki = comp (λ k → A (if ki then (k ∨ i') else (~ k ∧ i) end) (k ∨ j'))
+                    (λ where
+                        k (ki = i0) → lemmald k
+                        k (ki = i1) → lemmard k) (d ki)
+        lemmad : PathP (λ k → PathP (λ ki → A (if ki then (k ∨ i') else (~ k ∧ i) end) (k ∨ j')) (lemmald k) (lemmard k)) d d'
+        lemmad = transport-filler (λ k → PathP (λ ki → A (if ki then (k ∨ i') else (~ k ∧ i) end) (k ∨ j')) (lemmald k) (lemmard k)) d
+
+        sq' : PathP (λ i → PathP (λ j → A i j) (u' i) (d' i)) l' r'
+        sq' = sqFillA l' r' u' d'
+
+  sqFillPath : (a b : (i j : I) → A i j) → sqFill (λ i j → a i j ≡ b i j)
+  sqFillPath a b {lu} {ld} l {ru} {rd} r u d i j =
+    comp (λ k → a (i ∧ k) (j ∧ k) ≡ b (i ∧ k) (j ∧ k))
+      (λ where
+        k (i = i0) → {!sqFillA ? ? ? ? i0 k !}
+        k (i = i1) → {!!}
+        k (j = i0) → {!!}
+        k (j = i1) → {!!})
+      lu
+    where
+      lp : (k : I) → (a i0 (j ∧ k) ≡ b i0 (j ∧ k)) [ (k ∨ ~ k) ↦ (λ where
+          (k = i0) → lu
+          (k = i1) → l j)]
+      lp k = inS (λ l → {!!} )
+
+      -- Q: do we have a square-filling property for (λ j → A i j) for any fixed i?
+      -- A: yes, probably. just transport it to A i j, then fill, then comp back.
+      -- analogous to Pi.
+      sqFillAi : (i j : I) (lu ru : A i i0) (u : lu ≡ ru) (ld rd : A i j) (d : ld ≡ rd)
+                 (l : PathP (λ k → A i (k ∧ j)) lu ld)
+                 (r : PathP (λ k → A i (k ∧ j)) ru rd)
+                 → PathP (λ k' → PathP (λ k → A i (k ∧ j)) (u k') (d k')) l r
 
 -- third version
 module ISqFill where
