@@ -784,18 +784,31 @@ module _ where
   --                 ; (i = i1) → {!!}
   --                 ; (j = i0) → {!!}
   --                 ; (j = i1) → {!!}}) lu
-  --
+
+  -- from i to j via k
+  icoe : (i j k : I) → I
+  icoe i j k = if k then j else i end
+
+  -- usually we have two lines: i to i' and j to j'
+  -- from (i to i' via k) to (j to j' via k) via k'
+  icoe2 : (i i' j j' k k' : I) → I
+  icoe2 i i' j j' k k' = icoe (icoe i j k') (icoe i' j' k') k
 
   -- Given any i j i' j' square, we can always transport it to the 0 1 square, get a filling,
   -- and then hcomp it back to our
-  lemma : (i j i' j' : I)
-          (lu : A i j) (ru : A i' j) (u : PathP (λ k → A (if k then i' else i end) j) lu ru)
-          (ld : A i j') (rd : A i' j') (d : PathP (λ k → A (if k then i' else i end) j') ld rd)
+  lemma : (i i' j j' : I)
+          (lu : A i j)
+          (ld : A i j')
           (l : PathP (λ k → A i (if k then j' else j end)) lu ld)
+          (ru : A i' j)
+          (rd : A i' j')
           (r : PathP (λ k → A i' (if k then j' else j end)) ru rd)
+          (u : PathP (λ k → A (if k then i' else i end) j) lu ru)
+          (d : PathP (λ k → A (if k then i' else i end) j') ld rd)
           → PathP (λ k' → PathP (λ k → A (if k' then i' else i end) (if k then j' else j end)) (u k') (d k')) l r
-  lemma i j i' j' lu ru u ld rd d l r ki kj = comp
-    (λ k → A (if ki then (~ k ∨ i') else (k ∧ i) end) (if kj then (~ k ∨ j') else (k ∧ j) end))
+  lemma i i' j j' lu ld l ru rd r u d ki kj = comp
+    -- (λ k → A (if ki then (~ k ∨ i') else (k ∧ i) end) (if kj then (~ k ∨ j') else (k ∧ j) end))
+    (λ k → A (icoe2 i0 i1 i i' ki k) (if kj then (~ k ∨ j') else (k ∧ j) end))
     (λ where
        k (ki = i0) → lemmal (~ k) kj
        k (ki = i1) → lemmar (~ k) kj
@@ -861,24 +874,11 @@ module _ where
   sqFillPath a b {lu} {ld} l {ru} {rd} r u d i j =
     comp (λ k → a (i ∧ k) (j ∧ k) ≡ b (i ∧ k) (j ∧ k))
       (λ where
-        k (i = i0) → {!sqFillA ? ? ? ? i0 k !}
-        k (i = i1) → {!!}
+        k (i = i0) → λ kj → lemma i0 i0 i0 j (a i0 i0) (a i0 j) (λ k → a i0 (j ∧ k)) (b i0 i0) (b i0 j) (λ k → b i0 (j ∧ k)) lu (l j) kj k
+        k (i = i1) → {!lemma !}
         k (j = i0) → {!!}
         k (j = i1) → {!!})
       lu
-    where
-      lp : (k : I) → (a i0 (j ∧ k) ≡ b i0 (j ∧ k)) [ (k ∨ ~ k) ↦ (λ where
-          (k = i0) → lu
-          (k = i1) → l j)]
-      lp k = inS (λ l → {!!} )
-
-      -- Q: do we have a square-filling property for (λ j → A i j) for any fixed i?
-      -- A: yes, probably. just transport it to A i j, then fill, then comp back.
-      -- analogous to Pi.
-      sqFillAi : (i j : I) (lu ru : A i i0) (u : lu ≡ ru) (ld rd : A i j) (d : ld ≡ rd)
-                 (l : PathP (λ k → A i (k ∧ j)) lu ld)
-                 (r : PathP (λ k → A i (k ∧ j)) ru rd)
-                 → PathP (λ k' → PathP (λ k → A i (k ∧ j)) (u k') (d k')) l r
 
 -- third version
 module ISqFill where
