@@ -515,15 +515,15 @@ module SqFillNonDep where
   --                 ; (i = i1) → hSqFillA lu (r j) refl refl k
   --                 ; (j = i0) → hSqFillA lu (u i) refl refl k
   --                 ; (j = i1) → hSqFillA lu (d i) refl refl k}) lu
+  isPropPath : {a b : A} → isProp (a ≡ b)
+  isPropPath x y = hSqFillA x y refl refl
+
   hSqFillPath : {a b : A} → hSqFill (a ≡ b)
-  hSqFillPath {_} {_} {lu} l r u d i j =
-    hcomp (λ k → λ { (i = i0) → hSqFillA lu (l j) refl refl k
-                  ; (i = i1) → hSqFillA lu (r j) refl refl k
-                  ; (j = i0) → hSqFillA lu (u i) refl refl k
-                  ; (j = i1) → hSqFillA lu (d i) refl refl k}) lu
-    -- where
-    --   h : isProp (a ≡ a)
-    --   h x y i j = hSqFillA x y refl refl i j
+  hSqFillPath {a} {b} {lu} {ld} l {ru} {rd} r u d i j =
+    hcomp (λ k → λ { (i = i0) → isPropPath lu (l j) k
+                  ; (i = i1) → isPropPath lu (r j) k
+                  ; (j = i0) → isPropPath lu (u i) k
+                  ; (j = i1) → isPropPath lu (d i) k}) lu
 
 
 module _ where
@@ -991,6 +991,47 @@ module _ where
         k (j = i0) → lemma' i0 i0 i i0 (a i0 i0) (b i0 i0) lu (a i i0) (b i i0) (u i) (λ k → a (k ∧ i) i0) (λ k → b (k ∧ i) i0) k
         k (j = i1) → lemma' i0 i0 i i1 (a i0 i0) (b i0 i0) lu (a i i1) (b i i1) (d i) (λ k → a (k ∧ i) k) (λ k → b (k ∧ i) k) k)
       lu
+
+  module SqFillPathP {ℓ : Level} (A : I → I → I → Type ℓ)
+    (a--0 : (i j : I) → A i j i0)
+    (a--1 : (i j : I) → A i j i1)
+    (sqFillA : (ι ζ κ : I → I → I) → sqFill λ v w → A (ι v w) (ζ v w) (κ v w))
+      -- You can't quantify over `I → I → I` in official Cubical TT.
+      -- However, we can have an axiom that applies to all such A.
+    where
+
+    ThePathType : I → I → Type ℓ
+    ThePathType i j = PathP (λ k → A i j k) (a--0 i j) (a--1 i j)
+
+    itIsPropP : (ι ζ : I → I) →
+      (p0 : ThePathType (ι i0) (ζ i0)) →
+      (p1 : ThePathType (ι i1) (ζ i1)) →
+      PathP (λ v → ThePathType (ι v) (ζ v)) p0 p1
+    itIsPropP ι ζ p0 p1 v k = sqFillA
+      (λ v k → ι v)
+      (λ v k → ζ v)
+      (λ v k → k)
+      {p0 i0}
+      {p0 i1}
+      p0
+      {p1 i0}
+      {p1 i1}
+      p1
+      (λ v → a--0 (ι v) (ζ v))
+      (λ v → a--1 (ι v) (ζ v))
+      v
+      k
+
+    sqFillPathP : sqFill ThePathType
+    sqFillPathP {p00} {p01} p0- p1- p-0 p-1 i j =
+      comp (λ h → ThePathType (i ∧ h) (j ∧ h)) {i ∨ ~ i ∨ j ∨ ~ j}
+      (λ where
+           h (i = i0) → itIsPropP (λ h' → i ∧ h') (λ h' → j ∧ h') p00 (p0- j) h
+           h (i = i1) → itIsPropP (λ h' → i ∧ h') (λ h' → j ∧ h') p00 (p1- j) h
+           h (j = i0) → itIsPropP (λ h' → i ∧ h') (λ h' → j ∧ h') p00 (p-0 i) h
+           h (j = i1) → itIsPropP (λ h' → i ∧ h') (λ h' → j ∧ h') p00 (p-1 i) h
+      )
+      p00
 
 -- third version
 module ISqFill where
