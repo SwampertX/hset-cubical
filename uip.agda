@@ -424,6 +424,7 @@ module SqFillNonDep where
       isLeft (inl x) = ⊤
       isLeft (inr y) = ⊥
 
+  -- domi: Cover is traditionally called NoConfusion (for general inductive types) and reflCode and inl≠inr are instances of encode, which is usually called noConfusion, see https://doi.org/10.1007/11617990_12
   Cover : (c c' : A + A) → Type
   Cover (inl x) (inl y) = x ≡ y
   Cover (inr x) (inr y) = x ≡ y
