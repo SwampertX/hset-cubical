@@ -198,6 +198,7 @@ module SqFillNonDep where
   hSqFillProductAB l r u d i j .snd = hSqFillA (λ i → l i .snd) (λ i → r i .snd) (λ i → u i .snd) (λ i → d i .snd) i j
 
   hSqFillPiAB : hSqFill ((a : A) → B a)
+  -- hSqFillPiAB l r u d i j a = hSqFillB a (λ i → l i a) (λ i → r i a) (λ i → u i a) (λ i → d i a) i j
   hSqFillPiAB l r u d i j a = hSqFillB a (λ i → l i a) (λ i → r i a) (λ i → u i a) (λ i → d i a) i j
 
   if_then_else_end : I → I → I → I
@@ -553,8 +554,14 @@ module _ where
 
   {-# INLINE if_then_else_end #-}
 
+  -- I'm pretty sure this does not have a de Morgan expression.
+  -- eqi : I → I → I
+  -- eqi i j = ((i ∧ j) ∨ (~ i ∧ ~ j))
+
   spread : (i j : I) → A i j → (i' j' : I) → A i' j'
   spread i j a i' j' = transport (λ k → A (if k then i' else i end) (if k then j' else j end)) a
+  -- so there is no generic way to state spread.
+  -- spread i j a i' j' = transp (λ k → A (if k then i' else i end) (if k then j' else j end)) (eqi i i' ∧ eqi j j') a
 
   -- not provable because I is only a de morgan algebra.
   -- in particular, (~ k ∨ i) ∧ (k ∨ i) ≠ i.
@@ -587,8 +594,19 @@ module _ where
       -- since we have a square of functions from (a : A i j) to (B i j a),
       -- we can then map sqa into B i j (sqa i j)
       -- in particular, we can have the corners in B
+
+      -- cannot pattern match on i and j. But we can try to do so by a sub/partial type.
+      -- we have an inhabitant of the square of types (λ i j → B i j a) at the boundaries.
+      -- hollowB : PartialP (i ∨ ~ i ∨ j ∨ ~ j) (λ where
+      --             (i = i0) → λ j → B i j a
+      --             (i = i1) → λ j → B i j a
+      --             (j = i0) → λ j → B i j a
+      --             (j = i1) → λ j → B i j a)
+
       ulb : B i0 i0 (sqa i0 i0)
       ulb = ul (sqa i0 i0)
+      ulb' : B i0 i0 (sqa i0 i0)
+      ulb' = ul (sqa i0 i0)
       dlb : B i0 i1 (sqa i0 i1)
       dlb = dl (sqa i0 i1)
       urb : B i1 i0 (sqa i1 i0)
@@ -635,9 +653,6 @@ module _ where
       lemmaUB (j = i0) = λ k → u i (≡spread i j a k)
       lemmaDB : PartialP (  j) (λ {(j = i1) → PathP (λ k → B i j ((≡spread i j a) k)) (d i a) (db i)})
       lemmaDB (j = i1) = λ k → d i (≡spread i j a k)
-
-      -- lemmaB : PartialP
-
 
     -- transport {!PathP!} (sqfillB (spread i j a)
     -- (λ k → l k (transp (λ i' → A (if i' then i else i0 end) (if i' then j else k end)) i0 a))
