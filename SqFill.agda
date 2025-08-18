@@ -1,5 +1,5 @@
 -- If you are running mainline Agda, use --cubical
-{-# OPTIONS --cubical=no-glue --type-in-type #-}
+{-# OPTIONS --cubical=no-glue #-}
 
 -- Prelude is glue-free: --cubical=no-glue works out of the box.
 open import Cubical.Foundations.Prelude

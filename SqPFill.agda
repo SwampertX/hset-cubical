@@ -1,5 +1,5 @@
 -- If you are running mainline Agda, use --cubical
-{-# OPTIONS --cubical=no-glue --type-in-type #-}
+{-# OPTIONS --cubical=no-glue #-}
 
 -- Prelude is glue-free: --cubical=no-glue works out of the box.
 open import Cubical.Foundations.Prelude
@@ -12,8 +12,8 @@ open import Cubical.Foundations.Prelude
   )
 
 module _ where
-  sqFill : {ℓ : Level} → (A : I → I → Type ℓ) → Type ℓ
-  sqFill A =
+  SqPFill : {ℓ : Level} → (A : I → I → Type ℓ) → Type ℓ
+  SqPFill A =
     {a₀₀ : A i0 i0} {a₀₁ : A i0 i1} (a₀₋ : PathP (λ j → A i0 j) a₀₀ a₀₁)
     {a₁₀ : A i1 i0} {a₁₁ : A i1 i1} (a₁₋ : PathP (λ j → A i1 j) a₁₀ a₁₁)
     (a₋₀ : PathP (λ i → A i i0) a₀₀ a₁₀) (a₋₁ : PathP (λ i → A i i1) a₀₁ a₁₁)
@@ -21,11 +21,11 @@ module _ where
 
   private postulate
     A A' : I → I → Type
-    sqFillA : sqFill A
-    sqFillA' : sqFill A'
+    SqPFillA : SqPFill A
+    SqPFillA' : SqPFill A'
     -- a b : A
     B : (i j : I) → A i j → Type
-    sqFillB : (a : (i j : I) → A i j) → sqFill (λ i j → B i j (a i j))
+    SqPFillB : (a : (i j : I) → A i j) → SqPFill (λ i j → B i j (a i j))
 
   if_then_else_end : I → I → I → I
   if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
@@ -35,23 +35,18 @@ module _ where
   -- we cannot say (i = i') and (j = j').
   spread : (i j : I) → A i j → (i' j' : I) → A i' j'
   spread i j a i' j' = transport (λ k → A (if k then i' else i end) (if k then j' else j end)) a
-  -- spread i j a i' j' = transp (λ k → A (if k then i' else i end) (if k then j' else j end)) (((i ∧ i') ∨ (~ i ∧ ~ i')) ∧ ((j ∧ j') ∨ (~ j ∧ ~ j'))) a
 
   ≡spread : (i j : I) (a : A i j) → a ≡ spread i j a i j
-  -- ≡spread i j a = transport-filler (λ k → A (if k then i else i end) (if k then j else j end)) a
-  ≡spread i j a k = transp (λ k' → A (if (k' ∧ k) then i else i end) (if (k' ∧ k) then j else j end)) (~ k) a
-  -- ≡spread i j a k = transp (λ k' → A i j) (~ k) a
-  -- ≡spread i j a k' = transp (λ k → A (if (k' ∧ k) then i else i end) (if (k' ∧ k) then j else j end)) (~ k' ∨ (((i ∧ i) ∨ (~ i ∧ ~ i)) ∧ ((j ∧ j) ∨ (~ j ∧ ~ j)))) a
+  ≡spread i j a = transport-filler (λ k → A (if k then i else i end) (if k then j else j end)) a
 
-  sqfillPiAB : sqFill (λ i j → (a : A i j) → B i j a)
-  sqfillPiAB {ul} {dl} l {ur} {dr} r u d i j a =
+  SqPFillPiAB : SqPFill (λ i j → (a : A i j) → B i j a)
+  SqPFillPiAB {ul} {dl} l {ur} {dr} r u d i j a =
     comp (λ k → congS (B i j) (sym (≡spread i j a)) k) {φ = i ∨ ~ i ∨ j ∨ ~ j}
       (λ where
-        k (i = i0) → lemmaLB 1=1 (~ k)
-        k (i = i1) → lemmaRB 1=1 (~ k)
-        k (j = i0) → lemmaUB 1=1 (~ k)
-        k (j = i1) → lemmaDB 1=1 (~ k)
-          ) (b i j)
+        k (i = i0) → l j (≡spread i j a (~ k))
+        k (i = i1) → r j (≡spread i j a (~ k))
+        k (j = i0) → u i (≡spread i j a (~ k))
+        k (j = i1) → d i (≡spread i j a (~ k))) (b i j)
     where
       -- we spread any given (a : A i j) into a square
       sqa : (i' j' : I) → A i' j'
@@ -76,23 +71,13 @@ module _ where
       ub i = u i (sqa i i0)
       db : PathP (λ i → B i i1 (sqa i i1)) dlb drb
       db i = d i (sqa i i1)
-      -- and the filled square in (B i j (sqa i j)) by the sqfillB assumption.
+      -- and the filled square in (B i j (sqa i j)) by the SqPFillB assumption.
       b : SquareP (λ i' j' → B i' j' (sqa i' j')) lb rb ub db
-      b = sqFillB sqa lb rb ub db
+      b = SqPFillB sqa lb rb ub db
 
-      -- is this possible to hold definitionally?
-      lemmaLB : PartialP (~ i) (λ {(i = i0) → PathP (λ k → B i j ((≡spread i j a) k)) (l j a) (lb j)})
-      lemmaLB (i = i0) = λ k → l j (≡spread i j a k)
-      lemmaRB : PartialP (  i) (λ {(i = i1) → PathP (λ k → B i j ((≡spread i j a) k)) (r j a) (rb j)})
-      lemmaRB (i = i1) = λ k → r j (≡spread i j a k)
-      lemmaUB : PartialP (~ j) (λ {(j = i0) → PathP (λ k → B i j ((≡spread i j a) k)) (u i a) (ub i)})
-      lemmaUB (j = i0) = λ k → u i (≡spread i j a k)
-      lemmaDB : PartialP (  j) (λ {(j = i1) → PathP (λ k → B i j ((≡spread i j a) k)) (d i a) (db i)})
-      lemmaDB (j = i1) = λ k → d i (≡spread i j a k)
-
-  sqfillSigmaAB : sqFill (λ i j → Σ[ a ∈ A i j ] B i j a)
-  sqfillSigmaAB l r u d i j .fst = sqFillA (λ j → l j .fst) (λ j → r j .fst) (λ i → u i .fst) (λ i → d i .fst) i j
-  sqfillSigmaAB l r u d i j .snd = sqFillB (λ i' j' → sqfillSigmaAB l r u d i' j' .fst)
+  SqPFillSigmaAB : SqPFill (λ i j → Σ[ a ∈ A i j ] B i j a)
+  SqPFillSigmaAB l r u d i j .fst = SqPFillA (λ j → l j .fst) (λ j → r j .fst) (λ i → u i .fst) (λ i → d i .fst) i j
+  SqPFillSigmaAB l r u d i j .snd = SqPFillB (λ i' j' → SqPFillSigmaAB l r u d i' j' .fst)
                                            (λ j → l j .snd) (λ j → r j .snd) (λ i → u i .snd) (λ i → d i .snd) i j
 
   data cpd (A B : I → I → Type) (i j : I) : Type where
@@ -143,38 +128,38 @@ module _ where
     (λ k → decode {c = inr x} {c' = p k} (encode {c = inr x} {c' = p k} (λ k' → p (k ∧ k'))) ≡ λ k' → p (k ∧ k'))
     (λ k → λ k' → inr (transportRefl (refl {x = x}) k k'))
 
-  sqFillCoproduct : sqFill (cpd A A')
-  sqFillCoproduct {inl lu} {inl ld} l {inl ru} {inl rd} r u d i j =
+  SqPFillCoproduct : SqPFill (cpd A A')
+  SqPFillCoproduct {inl lu} {inl ld} l {inl ru} {inl rd} r u d i j =
     (comp (λ k → cpd A A' i j)
       (λ where
         k (i = i0) → decodeEncode {c = l i0} {c' = l i1} l k j
         k (i = i1) → decodeEncode {c = r i0} {c' = r i1} r k j
         k (j = i0) → decodeEncode {c = u i0} {c' = u i1} u k i
         k (j = i1) → decodeEncode {c = d i0} {c' = d i1} d k i)
-      (inl {A} {A'} (sqFillA
+      (inl {A} {A'} (SqPFillA
            (encode {c = l i0} {c' = l i1} l)
            (encode {c = r i0} {c' = r i1} r)
            (encode {c = u i0} {c' = u i1} u)
            (encode {c = d i0} {c' = d i1} d) i j)))
-      -- {! inl {A} {A} (sqFillA (encode l) (encode r) (encode u) (encode d) i j) !}
-  sqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j =
+      -- {! inl {A} {A} (SqPFillA (encode l) (encode r) (encode u) (encode d) i j) !}
+  SqPFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j =
     (comp (λ k → cpd A A' i j)
       (λ where
         k (i = i0) → decodeEncode {c = l i0} {c' = l i1} l k j
         k (i = i1) → decodeEncode {c = r i0} {c' = r i1} r k j
         k (j = i0) → decodeEncode {c = u i0} {c' = u i1} u k i
         k (j = i1) → decodeEncode {c = d i0} {c' = d i1} d k i)
-      (inr {A} {A'} (sqFillA'
+      (inr {A} {A'} (SqPFillA'
            (encode {c = l i0} {c' = l i1} l)
            (encode {c = r i0} {c' = r i1} r)
            (encode {c = u i0} {c' = u i1} u)
            (encode {c = d i0} {c' = d i1} d) i j)))
-  sqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr x y l)
-  sqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr y x (λ k → l (~ k)))
-  sqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr x y u)
-  sqFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥-elim (inl≠inr y x (λ k → u (~ k)))
-  sqFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr x y d)
-  sqFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr y x (λ k → d (~ k)))
+  SqPFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr x y l)
+  SqPFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr y x (λ k → l (~ k)))
+  SqPFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr x y u)
+  SqPFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥-elim (inl≠inr y x (λ k → u (~ k)))
+  SqPFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr x y d)
+  SqPFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr y x (λ k → d (~ k)))
 
   -- from i to j via k
   icoe : (i j k : I) → I
@@ -282,7 +267,7 @@ module _ where
         lemmad = transport-filler (λ k → PathP (λ ki → d't ki k) (lemmald k) (lemmard k)) d
 
         sq' : PathP (λ i → PathP (λ j → A i j) (u' i) (d' i)) l' r'
-        sq' = sqFillA l' r' u' d'
+        sq' = SqPFillA l' r' u' d'
 
   -- Given any i j i' j' square, we can always transport it to the 0 1 square, get a filling,
   -- and then hcomp it back to our
@@ -294,8 +279,8 @@ module _ where
           → PathP (λ ki → PathP (λ kj → A (icoe2 i i i' i' kj ki) (icoe2 j j' j j' ki kj)) (u ki) (d ki)) l r
   lemma' lu ld l ru rd r u d ki kj = lemma lu ld l ru rd r u d ki kj
 
-  sqFillPath : (a b : (i j : I) → A i j) → sqFill (λ i j → a i j ≡ b i j)
-  sqFillPath a b {lu} {ld} l {ru} {rd} r u d i j =
+  SqPFillPath : (a b : (i j : I) → A i j) → SqPFill (λ i j → a i j ≡ b i j)
+  SqPFillPath a b {lu} {ld} l {ru} {rd} r u d i j =
     comp (λ k → a (i ∧ k) (j ∧ k) ≡ b (i ∧ k) (j ∧ k))
       (λ where
         k (i = i0) → lemma' (a i0 i0) (b i0 i0) lu (a i0 j) (b i0 j) (l j) (λ k → a i0 (k ∧ j)) (λ k → b i0 (k ∧ j)) k
@@ -303,3 +288,44 @@ module _ where
         k (j = i0) → lemma' (a i0 i0) (b i0 i0) lu (a i i0) (b i i0) (u i) (λ k → a (k ∧ i) i0) (λ k → b (k ∧ i) i0) k
         k (j = i1) → lemma' (a i0 i0) (b i0 i0) lu (a i i1) (b i i1) (d i) (λ k → a (k ∧ i) k) (λ k → b (k ∧ i) k) k)
       lu
+
+  module SqPFillPathP {ℓ : Level} (A : I → I → I → Type ℓ)
+    (a--0 : (i j : I) → A i j i0)
+    (a--1 : (i j : I) → A i j i1)
+    (SqPFillA : (ι ζ κ : I → I → I) → SqPFill (λ v w → A (ι v w) (ζ v w) (κ v w)))
+      -- You can't quantify over `I → I → I` in official Cubical TT.
+      -- However, we can have an axiom that applies to all such A.
+    where
+
+    ThePathType : I → I → Type ℓ
+    ThePathType i j = PathP (λ k → A i j k) (a--0 i j) (a--1 i j)
+
+    itIsPropP : (ι ζ : I → I) →
+      (p0 : ThePathType (ι i0) (ζ i0)) →
+      (p1 : ThePathType (ι i1) (ζ i1)) →
+      PathP (λ v → ThePathType (ι v) (ζ v)) p0 p1
+    itIsPropP ι ζ p0 p1 v k = SqPFillA
+      (λ v k → ι v)
+      (λ v k → ζ v)
+      (λ v k → k)
+      {p0 i0}
+      {p0 i1}
+      p0
+      {p1 i0}
+      {p1 i1}
+      p1
+      (λ v → a--0 (ι v) (ζ v))
+      (λ v → a--1 (ι v) (ζ v))
+      v
+      k
+
+    SqPFillPathP : SqPFill ThePathType
+    SqPFillPathP {p00} {p01} p0- p1- p-0 p-1 i j =
+      comp (λ h → ThePathType (i ∧ h) (j ∧ h)) {i ∨ ~ i ∨ j ∨ ~ j}
+      (λ where
+           h (i = i0) → itIsPropP (λ h' → i ∧ h') (λ h' → j ∧ h') p00 (p0- j) h
+           h (i = i1) → itIsPropP (λ h' → i ∧ h') (λ h' → j ∧ h') p00 (p1- j) h
+           h (j = i0) → itIsPropP (λ h' → i ∧ h') (λ h' → j ∧ h') p00 (p-0 i) h
+           h (j = i1) → itIsPropP (λ h' → i ∧ h') (λ h' → j ∧ h') p00 (p-1 i) h
+      )
+      p00
