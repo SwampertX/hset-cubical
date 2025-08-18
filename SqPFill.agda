@@ -1,6 +1,7 @@
-{-# OPTIONS --cubical --type-in-type #-} -- the "normal" cubical agda
+-- If you are running mainline Agda, use --cubical
+{-# OPTIONS --cubical=no-glue --type-in-type #-}
 
--- TODO: clean up imports to convince others we did not use Glue!
+-- Prelude is glue-free: --cubical=no-glue works out of the box.
 open import Cubical.Foundations.Prelude
   using (
     Level; Type; _≡_; refl; SquareP; PartialP;
@@ -16,7 +17,7 @@ module _ where
     {a₀₀ : A i0 i0} {a₀₁ : A i0 i1} (a₀₋ : PathP (λ j → A i0 j) a₀₀ a₀₁)
     {a₁₀ : A i1 i0} {a₁₁ : A i1 i1} (a₁₋ : PathP (λ j → A i1 j) a₁₀ a₁₁)
     (a₋₀ : PathP (λ i → A i i0) a₀₀ a₁₀) (a₋₁ : PathP (λ i → A i i1) a₀₁ a₁₁)
-    → SquareP A a₀₋ a₁₋ a₋₀ a₋₁
+    → PathP (λ i → PathP (λ j → A i j) (a₋₀ i) (a₋₁ i)) a₀₋ a₁₋
 
   private postulate
     A A' : I → I → Type
@@ -27,31 +28,30 @@ module _ where
     sqFillB : (a : (i j : I) → A i j) → sqFill (λ i j → B i j (a i j))
 
   if_then_else_end : I → I → I → I
-  -- if k then i else j end = ((~ k) ∧ j) ∨ (k ∧ i)
-  -- if k then i else j end = (j ∨ ~ k) ∧ (i ∨ k)
-  -- if i then j else k end = (k ∧ ~ i) ∨ ((i ∨ k) ∧ j)
   if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
 
   {-# INLINE if_then_else_end #-}
 
   -- we cannot say (i = i') and (j = j').
   spread : (i j : I) → A i j → (i' j' : I) → A i' j'
-  -- spread i j a i' j' = transport (λ k → A (if k then i' else i end) (if k then j' else j end)) a
-  spread i j a i' j' = transp (λ k → A (if k then i' else i end) (if k then j' else j end)) (((i ∧ i') ∨ (~ i ∧ ~ i')) ∧ ((j ∧ j') ∨ (~ j ∧ ~ j'))) a
+  spread i j a i' j' = transport (λ k → A (if k then i' else i end) (if k then j' else j end)) a
+  -- spread i j a i' j' = transp (λ k → A (if k then i' else i end) (if k then j' else j end)) (((i ∧ i') ∨ (~ i ∧ ~ i')) ∧ ((j ∧ j') ∨ (~ j ∧ ~ j'))) a
 
   ≡spread : (i j : I) (a : A i j) → a ≡ spread i j a i j
   -- ≡spread i j a = transport-filler (λ k → A (if k then i else i end) (if k then j else j end)) a
-  ≡spread i j a k' = transp (λ k → A (if (k' ∧ k) then i else i end) (if (k' ∧ k) then j else j end)) (~ k' ∨ (((i ∧ i) ∨ (~ i ∧ ~ i)) ∧ ((j ∧ j) ∨ (~ j ∧ ~ j)))) a
+  ≡spread i j a k = transp (λ k' → A (if (k' ∧ k) then i else i end) (if (k' ∧ k) then j else j end)) (~ k) a
+  -- ≡spread i j a k = transp (λ k' → A i j) (~ k) a
+  -- ≡spread i j a k' = transp (λ k → A (if (k' ∧ k) then i else i end) (if (k' ∧ k) then j else j end)) (~ k' ∨ (((i ∧ i) ∨ (~ i ∧ ~ i)) ∧ ((j ∧ j) ∨ (~ j ∧ ~ j)))) a
 
   sqfillPiAB : sqFill (λ i j → (a : A i j) → B i j a)
-  sqfillPiAB {ul} {dl} l {ur} {dr} r u d i j a = {!b i j!}
-    -- comp (λ k → congS (B i j) (sym (≡spread i j a)) k) {φ = i ∨ ~ i ∨ j ∨ ~ j}
-    --   (λ where
-    --     k (i = i0) → lemmaLB 1=1 (~ k)
-    --     k (i = i1) → lemmaRB 1=1 (~ k)
-    --     k (j = i0) → lemmaUB 1=1 (~ k)
-    --     k (j = i1) → lemmaDB 1=1 (~ k)
-    --       ) (b i j)
+  sqfillPiAB {ul} {dl} l {ur} {dr} r u d i j a =
+    comp (λ k → congS (B i j) (sym (≡spread i j a)) k) {φ = i ∨ ~ i ∨ j ∨ ~ j}
+      (λ where
+        k (i = i0) → lemmaLB 1=1 (~ k)
+        k (i = i1) → lemmaRB 1=1 (~ k)
+        k (j = i0) → lemmaUB 1=1 (~ k)
+        k (j = i1) → lemmaDB 1=1 (~ k)
+          ) (b i j)
     where
       -- we spread any given (a : A i j) into a square
       sqa : (i' j' : I) → A i' j'

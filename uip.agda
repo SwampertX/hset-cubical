@@ -527,6 +527,23 @@ module SqFillNonDep where
                   ; (j = i1) → isPropPath lu (d i) k}) lu
 
 
+  hSqFillPathP : (A : I → Type) (sqFillA : (i : I) → hSqFill (A i)) (a : A i0) (b : A i1) → hSqFill (PathP A a b)
+  hSqFillPathP A sqFillA a b {lu} l r u d i j = hcomp (λ where
+    k (i = i0) →
+      comp (λ k' → PathP (λ i → A (~ k' ∨ i)) (transport-filler (λ j → A j) a (~ k')) b)
+      (λ where
+        k' (k = i0) → λ j → {!!}
+        k' (k = i1) → {!!}
+        k' (j = i0) → λ j → {!!}
+        k' (j = i1) → λ j → {!!})
+      (λ i₁ → sqFillA i1 (refl {x = transport (λ i → A i) a}) (refl {x = b}) (fromPathP (d i₁)) (fromPathP lu) i₁ (~ j))
+    k (i = i1) → {!!}
+    k (j = i0) → {!!}
+    k (j = i1) → {!!}) lu
+    where
+
+  -- hSqFillPath {_} {_} {lu} l r u d i j =
+
 module _ where
   sqFill : {ℓ : Level} → (A : I → I → Type ℓ) → Type ℓ
   sqFill A =
@@ -1017,6 +1034,9 @@ module _ where
 
     ThePathType : I → I → Type ℓ
     ThePathType i j = PathP (λ k → A i j k) (a--0 i j) (a--1 i j)
+
+    isPropP : (ip0 jp0 ip1 jp1 : I) (p0 : ThePathType ip0 jp0) (p1 : ThePathType ip1 jp1) → PathP (λ ki → ThePathType (icoe ip0 ip1 ki) (icoe jp0 jp1 ki)) p0 p1
+    isPropP ip0 jp0 ip1 jp1 p0 p1 ki kj = {!comp (λ )!}
 
     itIsPropP : (ι ζ : I → I) →
       (p0 : ThePathType (ι i0) (ζ i0)) →
