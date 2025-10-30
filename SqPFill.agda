@@ -295,6 +295,7 @@ module _ where
     (SqPFillA : (ι ζ κ : I → I → I) → SqPFill (λ v w → A (ι v w) (ζ v w) (κ v w)))
       -- You can't quantify over `I → I → I` in official Cubical TT.
       -- However, we can have an axiom that applies to all such A.
+      -- Dominique: maybe even possible to "defunctionalize" to remove the I^2 → I
     where
 
     ThePathType : I → I → Type ℓ
