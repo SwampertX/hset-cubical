@@ -1,15 +1,16 @@
 -- If you are running mainline Agda, use --cubical
-{-# OPTIONS --cubical=no-glue #-}
+-- {-# OPTIONS --cubical=no-glue #-}
+{-# OPTIONS --cubical=no-glue --guardedness #-}
 
 -- Prelude is glue-free: --cubical=no-glue works out of the box.
 open import Cubical.Foundations.Prelude
-  using (
-    Level; Type; _≡_; refl; SquareP; PartialP;
-    I; _∧_; _∨_; ~_; i0; i1; 1=1;
-    Σ-syntax; fst; snd;
-    cong; transport; PathP; transp; transport-filler; comp; Partial; _[_↦_]; inS; outS; hcomp;
-    isProp; fromPathP; J; transportRefl; sym; congS
-  )
+  -- using (
+  --   Level; Type; _≡_; refl; SquareP; PartialP;
+  --   I; _∧_; _∨_; ~_; i0; i1; 1=1;
+  --   Σ-syntax; fst; snd;
+  --   cong; transport; PathP; transp; transport-filler; comp; Partial; _[_↦_]; inS; outS; hcomp;
+  --   isProp; fromPathP; J; transportRefl; sym; congS
+  -- )
 
 module _ where
   SqPFill : {ℓ : Level} → (A : I → I → Type ℓ) → Type ℓ
@@ -19,6 +20,60 @@ module _ where
     (a₋₀ : PathP (λ i → A i i0) a₀₀ a₁₀) (a₋₁ : PathP (λ i → A i i1) a₀₁ a₁₁)
     → PathP (λ i → PathP (λ j → A i j) (a₋₀ i) (a₋₁ i)) a₀₋ a₁₋
 
+  if_then_else_end : I → I → I → I
+  if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
+
+  {-# INLINE if_then_else_end #-}
+
+  module SqPFillPi {ℓ : Level}
+    (A : I → I → Type ℓ) (B : (i j : I) → A i j → Type ℓ)
+    (SqPFillB : (a : (i j : I) → A i j) → SqPFill (λ i j → B i j (a i j))) where
+
+    -- we cannot say (i = i') and (j = j').
+    spread : (i j : I) → A i j → (i' j' : I) → A i' j'
+    spread i j a i' j' = transport (λ k → A (if k then i' else i end) (if k then j' else j end)) a
+
+    -- transport-filler p x i = transp (λ j → p (i ∧ j)) (~ i) x
+    ≡spread : (i j : I) (a : A i j) → a ≡ spread i j a i j
+    -- ≡spread i j a = transport-filler (λ k → A (if k then i else i end) (if k then j else j end)) a
+    ≡spread i j a = λ k → (transp (λ k' → A (if (k ∧ k') then i else i end) (if (k ∧ k') then j else j end)) (~ k) a)
+
+    SqPFillPiAB : SqPFill (λ i j → (a : A i j) → B i j a)
+    SqPFillPiAB {ul} {dl} l {ur} {dr} r u d i j a =
+        comp (λ k → B i j (≡spread i j a (~ k))) {φ = i ∨ ~ i ∨ j ∨ ~ j}
+        (λ where
+            k (i = i0) → l j (≡spread i j a (~ k))
+            k (i = i1) → r j (≡spread i j a (~ k))
+            k (j = i0) → u i (≡spread i j a (~ k))
+            k (j = i1) → d i (≡spread i j a (~ k))) (b i j)
+        where
+        -- we spread any given (a : A i j) into a square
+        sqa : (i' j' : I) → A i' j'
+        sqa = spread i j a
+        -- since we have a square of functions from (a : A i j) to (B i j a),
+        -- we can then map sqa into B i j (sqa i j)
+        -- in particular, we can have the corners in B
+        ulb : B i0 i0 (sqa i0 i0)
+        ulb = ul (sqa i0 i0)
+        dlb : B i0 i1 (sqa i0 i1)
+        dlb = dl (sqa i0 i1)
+        urb : B i1 i0 (sqa i1 i0)
+        urb = ur (sqa i1 i0)
+        drb : B i1 i1 (sqa i1 i1)
+        drb = dr (sqa i1 i1)
+        -- sides in B
+        lb : PathP (λ j → B i0 j (sqa i0 j)) ulb dlb
+        lb j = l j (sqa i0 j)
+        rb : PathP (λ j → B i1 j (sqa i1 j)) urb drb
+        rb j = r j (sqa i1 j)
+        ub : PathP (λ i → B i i0 (sqa i i0)) ulb urb
+        ub i = u i (sqa i i0)
+        db : PathP (λ i → B i i1 (sqa i i1)) dlb drb
+        db i = d i (sqa i i1)
+        -- and the filled square in (B i j (sqa i j)) by the SqPFillB assumption.
+        b : SquareP (λ i' j' → B i' j' (sqa i' j')) lb rb ub db
+        b = SqPFillB sqa lb rb ub db
+
   private postulate
     A A' : I → I → Type
     SqPFillA : SqPFill A
@@ -26,55 +81,6 @@ module _ where
     -- a b : A
     B : (i j : I) → A i j → Type
     SqPFillB : (a : (i j : I) → A i j) → SqPFill (λ i j → B i j (a i j))
-
-  if_then_else_end : I → I → I → I
-  if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
-
-  {-# INLINE if_then_else_end #-}
-
-  -- we cannot say (i = i') and (j = j').
-  spread : (i j : I) → A i j → (i' j' : I) → A i' j'
-  spread i j a i' j' = transport (λ k → A (if k then i' else i end) (if k then j' else j end)) a
-
-  ≡spread : (i j : I) (a : A i j) → a ≡ spread i j a i j
-  ≡spread i j a = transport-filler (λ k → A (if k then i else i end) (if k then j else j end)) a
-
-  SqPFillPiAB : SqPFill (λ i j → (a : A i j) → B i j a)
-  SqPFillPiAB {ul} {dl} l {ur} {dr} r u d i j a =
-    comp (λ k → congS (B i j) (sym (≡spread i j a)) k) {φ = i ∨ ~ i ∨ j ∨ ~ j}
-      (λ where
-        k (i = i0) → l j (≡spread i j a (~ k))
-        k (i = i1) → r j (≡spread i j a (~ k))
-        k (j = i0) → u i (≡spread i j a (~ k))
-        k (j = i1) → d i (≡spread i j a (~ k))) (b i j)
-    where
-      -- we spread any given (a : A i j) into a square
-      sqa : (i' j' : I) → A i' j'
-      sqa = spread i j a
-      -- since we have a square of functions from (a : A i j) to (B i j a),
-      -- we can then map sqa into B i j (sqa i j)
-      -- in particular, we can have the corners in B
-      ulb : B i0 i0 (sqa i0 i0)
-      ulb = ul (sqa i0 i0)
-      dlb : B i0 i1 (sqa i0 i1)
-      dlb = dl (sqa i0 i1)
-      urb : B i1 i0 (sqa i1 i0)
-      urb = ur (sqa i1 i0)
-      drb : B i1 i1 (sqa i1 i1)
-      drb = dr (sqa i1 i1)
-      -- sides in B
-      lb : PathP (λ j → B i0 j (sqa i0 j)) ulb dlb
-      lb j = l j (sqa i0 j)
-      rb : PathP (λ j → B i1 j (sqa i1 j)) urb drb
-      rb j = r j (sqa i1 j)
-      ub : PathP (λ i → B i i0 (sqa i i0)) ulb urb
-      ub i = u i (sqa i i0)
-      db : PathP (λ i → B i i1 (sqa i i1)) dlb drb
-      db i = d i (sqa i i1)
-      -- and the filled square in (B i j (sqa i j)) by the SqPFillB assumption.
-      b : SquareP (λ i' j' → B i' j' (sqa i' j')) lb rb ub db
-      b = SqPFillB sqa lb rb ub db
-
   SqPFillSigmaAB : SqPFill (λ i j → Σ[ a ∈ A i j ] B i j a)
   SqPFillSigmaAB l r u d i j .fst = SqPFillA (λ j → l j .fst) (λ j → r j .fst) (λ i → u i .fst) (λ i → d i .fst) i j
   SqPFillSigmaAB l r u d i j .snd = SqPFillB (λ i' j' → SqPFillSigmaAB l r u d i' j' .fst)

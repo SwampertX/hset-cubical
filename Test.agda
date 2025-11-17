@@ -18,3 +18,10 @@ primitive
     {a₁₀ : A i1 i0} {a₁₁ : A i1 i1} (a₁₋ : PathP (λ j → A i1 j) a₁₀ a₁₁)
     (a₋₀ : PathP (λ i → A i i0) a₀₀ a₁₀) (a₋₁ : PathP (λ i → A i i1) a₀₁ a₁₁)
     → PathP (λ i → PathP (λ j → A i j) (a₋₀ i) (a₋₁ i)) a₀₋ a₁₋
+
+sqFill = primSqFill
+
+module hello (A B : Type) where
+  open import SqPFill renaming (SqPFill to SqFill)
+  p : SqFill (λ i j → A → B)
+  p = sqFill (λ i j → A → B)
