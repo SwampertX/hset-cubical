@@ -10,6 +10,8 @@ open import Agda.Primitive.Cubical public
            ; primHComp      to hcomp
            ; primTransp     to transp
            ; itIsOne        to 1=1 )
+open import Agda.Primitive.Cubical public
+open import Agda.Builtin.Cubical.Path public
 
 -- primitive primIMin : I → I → I
 primitive
@@ -24,4 +26,7 @@ sqFill = primSqFill
 module hello (A B : Type) where
   open import SqPFill renaming (SqPFill to SqFill)
   p : SqFill (λ i j → A → B)
-  p = sqFill (λ i j → A → B)
+  p =  sqFill (λ i j → A → B) 
+
+  p' : p ≡ {!!}
+  p' _ = p
