@@ -25,8 +25,8 @@ module SqFill where
   --   → PathP (λ i → a₋₀ i ≡ a₋₁ i) a₀₋ a₁₋
   SqFill : (A : Type) → Type
   SqFill A =
-    (a₀₀ : A) (a₀₁ : A) (a₀₋ : a₀₀ ≡ a₀₁)
-    (a₁₀ : A) (a₁₁ : A) (a₁₋ : a₁₀ ≡ a₁₁)
+    {a₀₀ : A} {a₀₁ : A} (a₀₋ : a₀₀ ≡ a₀₁)
+    {a₁₀ : A} {a₁₁ : A} (a₁₋ : a₁₀ ≡ a₁₁)
     (a₋₀ : a₀₀ ≡ a₁₀) (a₋₁ : a₀₁ ≡ a₁₁)
     → PathP (λ i → a₋₀ i ≡ a₋₁ i) a₀₋ a₁₋
   -- postulate SqFill : Type
@@ -38,7 +38,7 @@ module SqFill where
   module SqFillPi (A : Type) (B : A → Type) (SqFillB : (x : A) → SqFill (B x)) where
 
     SqFillPiAB : SqFill ((a : A) → B a)
-    SqFillPiAB (lu) (ld) l (ru) (rd) r u d i j a = SqFillB a (lu a) (ld a) (λ i → l i a) (ru a) (rd a) (λ i → r i a) (λ i → u i a) (λ i → d i a) i j
+    SqFillPiAB {lu} {ld} l {ru} {rd} r u d i j a = SqFillB a {lu a} {ld a} (λ i → l i a) {ru a} {rd a} (λ i → r i a) (λ i → u i a) (λ i → d i a) i j
 
   {-# BUILTIN SQFILLPI SqFillPi.SqFillPiAB #-}
 

@@ -63,8 +63,8 @@ module hello-dep (A : Type) (B : A → Type)
   sqFillB : (a : A) → SqFill (B a)
   sqFillB a = prim^sqFill (B a)
 
-  q : (a₀₀ a₀₁ : (a : A) → B a) (a₀₋ : a₀₀ ≡ a₀₁)
-    (a₁₀ a₁₁ : (a : A) → B a) (a₁₋ : a₁₀ ≡ a₁₁)
+  q : {a₀₀ a₀₁ : (a : A) → B a} (a₀₋ : a₀₀ ≡ a₀₁)
+    {a₁₀ a₁₁ : (a : A) → B a} (a₁₋ : a₁₀ ≡ a₁₁)
     (a₋₀ : a₀₀ ≡ a₁₀) (a₋₁ : a₀₁ ≡ a₁₁)
     → PathP (λ i → a₋₀ i ≡ a₋₁ i) a₀₋ a₁₋
   -- q (lu) (ld) = SqFillPiAB A (λ a → B a) (λ a (lu) (ld) → prim^sqFill (B a) (lu) (ld)) (lu) (ld)
@@ -80,7 +80,7 @@ module hello-dep (A : Type) (B : A → Type)
   --   i j : I
   --   a : A
   -- check : _≡_ {A = SqFill ((a : A) → B a)} (λ {lu} {ld} → p {lu} {ld}) (λ {lu} {ld} → q {lu} {ld})
-  check : p ≡ q
+  check : (λ {lu} {ld} → p {lu} {ld}) ≡ q
   -- check = {!!}
   -- check : (λ {lu} {ld} → p {lu} {ld}) ≡ q
   -- check : (λ {lu} {ld} → q {lu} {ld}) ≡ p
@@ -92,7 +92,7 @@ module hello-dep (A : Type) (B : A → Type)
   -- check = λ i a₀₋ a₁₋ a₋₀ a₋₁ i₁ i₂ a → {!!}
   -- check k l r u d i j a = {!!}
   -- check = λ i₁ a₀₀ a₀₁ a₀₋ a₁₀ a₁₁ a₁₋ a₋₀ a₋₁ i₂ i₃ a₁ → {!!}
-  check k = {!!}
+  check k = p
   -- check k = λ a₀₀ a₀₁ a₀₋ a₁₀ a₁₁ a₁₋ a₋₀ a₋₁ → {!prim^sqFill!}
   -- check = {!!}
   -- check = λ i a₀₋ a₁₋ a₋₀ a₋₁ i₁ i₂ a → {!!}
