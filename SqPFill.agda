@@ -1,5 +1,5 @@
 -- If you are running mainline Agda, use --cubical
-{-# OPTIONS --cubical=no-glue --guardedness #-}
+{-# OPTIONS --cubical=no-glue #-}
 
 open import Agda.Builtin.Cubical.Path
 open import Agda.Primitive.Cubical
@@ -18,21 +18,21 @@ open import Agda.Builtin.Sigma
 module SqPFill where
 
   module Helper where
-    refl : {ℓ : Level} {A : Type ℓ} {x : A} → x ≡ x
+    refl : ∀ {ℓ} {A : Type ℓ} {x : A} → x ≡ x
     refl {x = x} _ = x
     {-# INLINE refl #-}
 
     -- transport is a special case of transp
-    transport : {ℓ : Level} {A B : Type ℓ} → A ≡ B → A → B
+    transport : ∀ {ℓ} {A B : Type ℓ} → A ≡ B → A → B
     transport p a = transp (λ i → p i) i0 a
 
-    transportRefl : {ℓ : Level} {A : Type ℓ} (x : A) → transport refl x ≡ x
+    transportRefl : ∀ {ℓ} {A : Type ℓ} (x : A) → transport refl x ≡ x
     transportRefl {A = A} x i = transp (λ _ → A) i x
 
     transport-filler : ∀ {ℓ} {A B : Type ℓ} (p : A ≡ B) (x : A) → PathP (λ i → p i) x (transport p x)
     transport-filler p x i = transp (λ j → p (i ∧ j)) (~ i) x
 
-    SquareP : {ℓ : Level}
+    SquareP : ∀ {ℓ}
       (A : I → I → Type ℓ)
       {a₀₀ : A i0 i0} {a₀₁ : A i0 i1} (a₀₋ : PathP (λ j → A i0 j) a₀₀ a₀₁)
       {a₁₀ : A i1 i0} {a₁₁ : A i1 i1} (a₁₋ : PathP (λ j → A i1 j) a₁₀ a₁₁)
@@ -42,20 +42,22 @@ module SqPFill where
 
   open Helper
 
-  SqPFill : {ℓ : Level} → (A : I → I → Type ℓ) → Type ℓ
+  SqPFill : (A : I → I → Type) → Type
   SqPFill A =
     {a₀₀ : A i0 i0} {a₀₁ : A i0 i1} (a₀₋ : PathP (λ j → A i0 j) a₀₀ a₀₁)
     {a₁₀ : A i1 i0} {a₁₁ : A i1 i1} (a₁₋ : PathP (λ j → A i1 j) a₁₀ a₁₁)
     (a₋₀ : PathP (λ i → A i i0) a₀₀ a₁₀) (a₋₁ : PathP (λ i → A i i1) a₀₁ a₁₁)
     → PathP (λ i → PathP (λ j → A i j) (a₋₀ i) (a₋₁ i)) a₀₋ a₁₋
 
+  {-# BUILTIN SQPFILL SqPFill #-}
+
   if_then_else_end : I → I → I → I
   if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
 
   {-# INLINE if_then_else_end #-}
 
-  module SqPFillPi {ℓ : Level}
-    (A : I → I → Type ℓ) (B : (i j : I) → A i j → Type ℓ)
+  module SqPFillPi
+    (A : I → I → Type) (B : (i j : I) → A i j → Type)
     (SqPFillB : (a : (i j : I) → A i j) → SqPFill (λ i j → B i j (a i j))) where
 
     -- we cannot say (i = i') and (j = j').
@@ -103,9 +105,15 @@ module SqPFill where
         b : SquareP (λ i' j' → B i' j' (sqa i' j')) lb rb ub db
         b = SqPFillB sqa lb rb ub db
 
-  module SqPFillSigma {ℓ : Level}
-    (A : I → I → Type ℓ) (SqPFillA : SqPFill A)
-    (B : (i j : I) → A i j → Type ℓ) (SqPFillB : (a : (i j : I) → A i j) → SqPFill (λ i j → B i j (a i j)))
+    postulate
+      SqFillPiABWrong : Type
+
+  -- {-# BUILTIN SQFILLPI SqPFillPi.SqFillPiABWrong #-}
+  {-# BUILTIN SQPFILLPI SqPFillPi.SqPFillPiAB #-}
+
+  module SqPFillSigma
+    (A : I → I → Type) (SqPFillA : SqPFill A)
+    (B : (i j : I) → A i j → Type) (SqPFillB : (a : (i j : I) → A i j) → SqPFill (λ i j → B i j (a i j)))
     where
 
     SqPFillSigmaAB : SqPFill (λ i j → Σ (A i j) (λ a → B i j a))
@@ -113,31 +121,31 @@ module SqPFill where
     SqPFillSigmaAB l r u d i j .snd = SqPFillB (λ i' j' → SqPFillSigmaAB l r u d i' j' .fst)
                                             (λ j → l j .snd) (λ j → r j .snd) (λ i → u i .snd) (λ i → d i .snd) i j
 
-  module SqPFillCpdt {ℓ : Level}
-    (A A' : I → I → Type ℓ) (SqPFillA : SqPFill A) (SqPFillA' : SqPFill A')
-    (B : (i j : I) → A i j → Type ℓ) (SqPFillB : (a : (i j : I) → A i j) → SqPFill (λ i j → B i j (a i j)))
+  module SqPFillCpdt
+    (A A' : I → I → Type) (SqPFillA : SqPFill A) (SqPFillA' : SqPFill A')
+    (B : (i j : I) → A i j → Type) (SqPFillB : (a : (i j : I) → A i j) → SqPFill (λ i j → B i j (a i j)))
     where
 
-    data cpd {ℓ : Level} (A B : I → I → Type ℓ) (i j : I) : Type ℓ where
+    data cpd (A B : I → I → Type) (i j : I) : Type where
         inl : A i j → cpd A B i j
         inr : B i j → cpd A B i j
 
-    data ⊥ {ℓ : Level} : Type ℓ where
+    data ⊥ : Type where
 
-    ⊥-elim : {ℓ ℓ' : Level} {A : Type ℓ} (x : ⊥ {ℓ'}) → A
+    ⊥-elim : {A : Type} (x : ⊥) → A
     ⊥-elim ()
 
-    data ⊤ {ℓ : Level} : Type ℓ where
+    data ⊤ : Type where
         tt : ⊤
 
-    inl≠inr : ∀ {ℓ : Level} {A B : I → I → Type ℓ} {i j i' j' : I} (x : A i j) (y : B i' j') → (PathP (λ k → cpd A B (if k then i' else i end) (if k then j' else j end)) (inl x) (inr y)) → ⊥
-    inl≠inr {_} {A} {B} x y p = transport (λ k → isLeft (p k)) tt
+    inl≠inr : {A B : I → I → Type} {i j i' j' : I} (x : A i j) (y : B i' j') → (PathP (λ k → cpd A B (if k then i' else i end) (if k then j' else j end)) (inl x) (inr y)) → ⊥
+    inl≠inr {A} {B} x y p = transport (λ k → isLeft (p k)) tt
         where
         isLeft : {i j : I} → cpd A B i j → Type
         isLeft (inl x) = ⊤
         isLeft (inr y) = ⊥
 
-    Cover : {i j i' j' : I} (c : cpd A A' i j) (c' : cpd A A' i' j') → Type ℓ
+    Cover : {i j i' j' : I} (c : cpd A A' i j) (c' : cpd A A' i' j') → Type
     Cover {i} {j} {i'} {j'} (inl x) (inl y) = PathP (λ k → A (if k then i' else i end) (if k then j' else j end)) x y
     Cover {i} {j} {i'} {j'} (inr x) (inr y) = PathP (λ k → A' (if k then i' else i end) (if k then j' else j end)) x y
     Cover {i} {j} {i'} {j'} _ _ = ⊥
@@ -174,7 +182,7 @@ module SqPFill where
             k (i = i1) → decodeEncode {c = r i0} {c' = r i1} r k j
             k (j = i0) → decodeEncode {c = u i0} {c' = u i1} u k i
             k (j = i1) → decodeEncode {c = d i0} {c' = d i1} d k i)
-        (inl {_} {A} {A'} (SqPFillA
+        (inl {A} {A'} (SqPFillA
             (encode {c = l i0} {c' = l i1} l)
             (encode {c = r i0} {c' = r i1} r)
             (encode {c = u i0} {c' = u i1} u)
@@ -187,7 +195,7 @@ module SqPFill where
             k (i = i1) → decodeEncode {c = r i0} {c' = r i1} r k j
             k (j = i0) → decodeEncode {c = u i0} {c' = u i1} u k i
             k (j = i1) → decodeEncode {c = d i0} {c' = d i1} d k i)
-        (inr {_} {A} {A'} (SqPFillA'
+        (inr {A} {A'} (SqPFillA'
             (encode {c = l i0} {c' = l i1} l)
             (encode {c = r i0} {c' = r i1} r)
             (encode {c = u i0} {c' = u i1} u)
@@ -199,7 +207,7 @@ module SqPFill where
     SqPFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr x y d)
     SqPFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr y x (λ k → d (~ k)))
 
-  module SqPFillPath {ℓ : Level} (A : I → I → Type ℓ) (SqPFillA : SqPFill A) where
+  module SqPFillPath (A : I → I → Type) (SqPFillA : SqPFill A) where
     -- from i to j via k
     icoe : (i j k : I) → I
     icoe i j k = if k then j else i end
@@ -246,7 +254,7 @@ module SqPFill where
         k (kj = i1) → lemmad (~ k) ki)
         (sq' ki kj)
         where
-            lu't ru't ld't rd't : I → Type ℓ
+            lu't ru't ld't rd't : I → Type
             lu't = (λ k → A (icoe ilu i0 k) (icoe jlu i0 k))
             lu' : A i0 i0
             lu' = transport (λ k → lu't k) lu
@@ -268,7 +276,7 @@ module SqPFill where
             lemmard : PathP rd't rd rd'
             lemmard = transport-filler (λ k → rd't k) rd
 
-            l't r't u't d't : I → I → Type ℓ
+            l't r't u't d't : I → I → Type
             l't kj k = A (icoe2 ilu ild i0 i0 kj k) (icoe2 jlu jld i0 i1 kj k)
             l' : PathP (λ j → A i0 j) lu' ld'
             l' kj = comp (λ k → l't kj k)
@@ -318,7 +326,7 @@ module SqPFill where
             k (j = i1) → lemma (a i0 i0) (b i0 i0) lu (a i i1) (b i i1) (d i) (λ k → a (k ∧ i) k) (λ k → b (k ∧ i) k) k)
         lu
 
-  module SqPFillPathP {ℓ : Level} (A : I → I → I → Type ℓ)
+  module SqPFillPathP (A : I → I → I → Type)
     (a--0 : (i j : I) → A i j i0)
     (a--1 : (i j : I) → A i j i1)
     (SqPFillA : (ι ζ κ : I → I → I) → SqPFill (λ v w → A (ι v w) (ζ v w) (κ v w)))
@@ -327,7 +335,7 @@ module SqPFill where
       -- Dominique: maybe even possible to "defunctionalize" to remove the I^2 → I
     where
 
-    ThePathType : I → I → Type ℓ
+    ThePathType : I → I → Type
     ThePathType i j = PathP (λ k → A i j k) (a--0 i j) (a--1 i j)
 
     itIsPropP : (ι ζ : I → I) →
