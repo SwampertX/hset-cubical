@@ -36,7 +36,7 @@ module Helper where
     → Type ℓ
   SquareP A a₀₋ a₁₋ a₋₀ a₋₁ = PathP (λ i → PathP (λ j → A i j) (a₋₀ i) (a₋₁ i)) a₀₋ a₁₋
 
-  cong : ∀{ℓ} {A : Type ℓ} {B : A → Type ℓ} {x y : A} (f : (a : A) → B a) (p : x ≡ y) →
+  cong : ∀{ℓ ℓ'} {A : Type ℓ} {B : A → Type ℓ'} {x y : A} (f : (a : A) → B a) (p : x ≡ y) →
          PathP (λ i → B (p i)) (f x) (f y)
   cong f p i = f (p i)
   {-# INLINE cong #-}
@@ -52,3 +52,13 @@ module Helper where
   A [ φ ↦ u ] = Sub A φ u
 
   infix 4 _[_↦_]
+
+  J : ∀ {ℓ ℓ'} {A : Type ℓ} {x y : A} (P : ∀ y → x ≡ y → Type ℓ') (d : P x refl) (p : x ≡ y) → P y p
+  J {x = x} P d p = transport (λ i → P (p i) (λ j → p (i ∧ j))) d
+
+  JRefl : ∀ {ℓ ℓ'} {A : Type ℓ} {x : A} (P : ∀ y → x ≡ y → Type ℓ') (d : P x refl) → J P d refl ≡ d
+  JRefl P d = transportRefl d
+
+  sym : ∀ {ℓ} {A : Type ℓ} {x y : A} → x ≡ y → y ≡ x
+  sym p = λ i → p (~ i)
+  {-# INLINE sym #-}

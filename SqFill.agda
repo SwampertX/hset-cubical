@@ -17,19 +17,12 @@ open import Agda.Builtin.Cubical.Sub
 
 
 module SqFill where
-  -- SqFill : {ℓ : Level} → (A : Type ℓ) → Type ℓ
-  -- SqFill A =
-  --   {a₀₀ : A} {a₀₁ : A} (a₀₋ : a₀₀ ≡ a₀₁)
-  --   {a₁₀ : A} {a₁₁ : A} (a₁₋ : a₁₀ ≡ a₁₁)
-  --   (a₋₀ : a₀₀ ≡ a₁₀) (a₋₁ : a₀₁ ≡ a₁₁)
-  --   → PathP (λ i → a₋₀ i ≡ a₋₁ i) a₀₋ a₁₋
   SqFill : (A : Type) → Type
   SqFill A =
     {a₀₀ : A} {a₀₁ : A} (a₀₋ : a₀₀ ≡ a₀₁)
     {a₁₀ : A} {a₁₁ : A} (a₁₋ : a₁₀ ≡ a₁₁)
     (a₋₀ : a₀₀ ≡ a₁₀) (a₋₁ : a₀₁ ≡ a₁₁)
     → PathP (λ i → a₋₀ i ≡ a₋₁ i) a₀₋ a₁₋
-  -- postulate SqFill : Type
 
   {-# BUILTIN SQFILL SqFill #-}
 
@@ -42,20 +35,6 @@ module SqFill where
 
   {-# BUILTIN SQFILLPI SqFillPi.SqFillPiAB #-}
 
-    -- data Unit : Type where
-    --   tt : Unit
-
-    -- postulate SqFillPiAB : SqFill Unit
-
-  -- SqFillPiAB : (A : Type) (B : A → Type) (SqFillB : (x : A) → SqFill (B x)) → SqFill ((a : A) → B a)
-  -- SqFillPiAB A B SqFillB lu ld l ru rd r u d i j a = SqFillB a (lu a) (ld a) (λ i → l i a) (ru a) (rd a) (λ i → r i a) (λ i → u i a) (λ i → d i a) i j
-  -- {-# BUILTIN SQFILLPI SqFillPiAB #-}
-
-  -- SqFillPiAB : (A : Type) (B : A → Type) (SqFillB : (x : A) → SqFill (B x)) → SqFill ((a : A) → B a)
-  -- SqFillPiAB A B SqFillB {lu} {ld} l {ru} {rd} r u d i j a = SqFillB a {lu a} {ld a} (λ i → l i a) {ru a} {rd a} (λ i → r i a) (λ i → u i a) (λ i → d i a) i j
-  -- {-# BUILTIN SQFILLPI SqFillPiAB #-}
-
-
   if_then_else_end : I → I → I → I
   if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
 
@@ -64,7 +43,7 @@ module SqFill where
   module SqFillSigma (A : Type) (SqFillA : SqFill A) (B : A → Type) (SqFillB : (x : A) → SqFill (B x)) where
 
     SqFillSigmaAB : SqFill (Σ A (λ a → B a))
-    SqFillSigmaAB l r u d i j .fst = SqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j
+    SqFillSigmaAB {lu} {ld} l {ru} {rd} r u d i j .fst = SqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j
     SqFillSigmaAB {lu} {ld} l {ru} {rd} r u d i j .snd = outS (sqb i j)
         where
         sqa : Square (cong fst l) (cong fst r) (cong fst u) (cong fst d)
@@ -164,237 +143,181 @@ module SqFill where
                             k (j' = i0) → LemmaU (~ k) i'
                             k (j' = i1) → LemmaD (~ k) i') (outS (sqb' i' j')))
 
-  --   -- -- This is the proof in the style of the Cubical library: Cubical.Foundations.HLevels
-  --   -- SqFillSigmaAB' : SqFill (Σ A (λ a → B a))
-  --   -- SqFillSigmaAB' l r u d i j .fst = SqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j
-  --   -- SqFillSigmaAB' {lu} {ld} l {ru} {rd} r u d i j .snd =
-  --   --     pathToPathP (λ i → PathP (λ j → SqB i j) (u i .snd) (d i .snd)) (cong snd l) (cong snd r)
-  --   --     (SqFill→PathPIsProp (λ j → SqB i1 j) (SqFillB (sqA i1 i1)) (snd ru) (snd rd) (transport (λ i → PathP (λ j → SqB i j) (u i .snd) (d i .snd)) (cong snd l)) (cong snd r) )
-  --   --     i j
-  --   --     where
-  --   --     sqA : I → I → A
-  --   --     sqA i j = (SqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j)
+  {-# BUILTIN SQFILLSIGMA SqFillSigma.SqFillSigmaAB #-}
 
-  --   --     SqB : I → I → Type
-  --   --     SqB i j = B (sqA i j)
+  data ⊥ : Type where
 
-  --   --     -- the key idea is
-  --   --     pathToPathP : (A : I → Type) (x : A i0) (y : A i1) → transport (λ i → A i) x ≡ y → PathP A x y
-  --   --     pathToPathP A x y p i = hcomp (λ j → λ {
-  --   --         (i = i0) → x;
-  --   --         (i = i1) → p j
-  --   --         }) (transp (λ j → A (i ∧ j)) (~ i) x)
+  data _+_ (A B : Type) : Type where
+      inl : A → A + B
+      inr : B → A + B
+
+  ⊥-elim : {A : Type} (x : ⊥) → A
+  ⊥-elim ()
+
+  data ⊤ : Type where
+      tt : ⊤
+
+  module EncodeDecode {A B : Type} where
+    inl≠inr : (x : A) (y : B) → (inl x ≡ inr y) → ⊥
+    inl≠inr x y p = transport (cong isLeft p) tt
+        where
+        isLeft : (A + B) → Type
+        isLeft (inl x) = ⊤
+        isLeft (inr y) = ⊥
+
+    Cover : (c c' : A + B) → Type
+    Cover (inl x) (inl y) = x ≡ y
+    Cover (inr x) (inr y) = x ≡ y
+    Cover _ _ = ⊥
+
+    reflCode : (c : A + B) → Cover c c
+    reflCode (inl x) = refl
+    reflCode (inr x) = refl
+
+    encode : {c c' : A + B} → c ≡ c' → Cover c c'
+    encode {c = c} p = transport (λ i → Cover c (p i)) (reflCode c)
+
+    decode : {c c' : A + B} → Cover c c' → c ≡ c'
+    decode {c = inl x} {c' = inl y} = cong inl
+    decode {c = inr x} {c' = inr y} = cong inr
+
+    decodeEncode : {c c' : A + B} (p : c ≡ c') → decode (encode p) ≡ p
+    decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
+    decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
 
 
-  --   --     -- These modules are Glue-free.
-  --   --     open import Cubical.Foundations.Prelude using (ℓ-max; symP; toPathP; hfill; fromPathP)
-  --   --     open import Cubical.Foundations.GroupoidLaws using (hcomp-unique)
+  module SqFillCpdt (A A' : Type) (SqFillA : SqFill A) (SqFillA' : SqFill A') where
+    open EncodeDecode
 
-  --   --     -- The modules below are Gluey. To make it convincing, let's just copy the required definitions.
-  --   --     -- open import Cubical.Foundations.Isomorphism using (Iso)
-  --   --     -- open import Cubical.Foundations.Path using (PathPIsoPath)
-  --   --     -- open import Cubical.Foundations.HLevels using (isPropRetract)
-  --   --     module _ {ℓ ℓ'} {A : Type ℓ} {B : Type ℓ'} where
-  --   --         section : (f : A → B) → (g : B → A) → Type ℓ'
-  --   --         section f g = ∀ b → f (g b) ≡ b
+    SqFillCoproduct : SqFill (A + A')
+    SqFillCoproduct {inl lu} {inl ld} l {inl ru} {inl rd} r u d i j =
+        (hcomp (λ where
+            k (i = i0) → decodeEncode l k j
+            k (i = i1) → decodeEncode r k j
+            k (j = i0) → decodeEncode u k i
+            k (j = i1) → decodeEncode d k i)
+        (inl {A} {A'} (SqFillA (encode l) (encode r) (encode u) (encode d) i j)))
+    SqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j =
+        (hcomp (λ where
+            k (i = i0) → decodeEncode l k j
+            k (i = i1) → decodeEncode r k j
+            k (j = i0) → decodeEncode u k i
+            k (j = i1) → decodeEncode d k i)
+        (inr {A} {A'} (SqFillA' (encode l) (encode r) (encode u) (encode d) i j)))
+    SqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr x y l)
+    SqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr y x (sym l))
+    SqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr x y u)
+    SqFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥-elim (inl≠inr y x (sym u))
+    SqFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr x y d)
+    SqFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr y x (sym d))
 
-  --   --         -- NB: `g` is the retraction!
-  --   --         retract : (f : A → B) → (g : B → A) → Type ℓ
-  --   --         retract f g = ∀ a → g (f a) ≡ a
+  module SqFillPath (A : Type) (SqFillA : SqFill A) where
+    SqFillPath : {a b : A} → SqFill (a ≡ b)
+    SqFillPath {_} {_} {lu} l r u d i j =
+        hcomp (λ k → λ {(i = i0) → isPropa≡b lu (l j) k
+                      ; (i = i1) → isPropa≡b lu (r j) k
+                      ; (j = i0) → isPropa≡b lu (u i) k
+                      ; (j = i1) → isPropa≡b lu (d i) k}) lu
+        where
+        isPropa≡b : {a b : A} (p q : a ≡ b) → p ≡ q
+        isPropa≡b p q = SqFillA p q refl refl
 
-  --   --     record Iso {ℓ ℓ'} (A : Type ℓ) (B : Type ℓ') : Type (ℓ-max ℓ ℓ') where
-  --   --         no-eta-equality
-  --   --         constructor iso
-  --   --         field
-  --   --             fun : A → B
-  --   --             inv : B → A
-  --   --             rightInv : section fun inv
-  --   --             leftInv  : retract fun inv
 
-  --   --     PathPIsoPath : ∀ {ℓ} (A : I → Type ℓ) (x : A i0) (y : A i1) → Iso (PathP A x y) (transport (λ i → A i) x ≡ y)
-  --   --     PathPIsoPath A x y .Iso.fun = fromPathP
-  --   --     PathPIsoPath A x y .Iso.inv = toPathP
-  --   --     PathPIsoPath A x y .Iso.rightInv q k i =
-  --   --         hcomp
-  --   --         (λ j → λ
-  --   --             { (i = i0) → slide (j ∨ ~ k)
-  --   --             ; (i = i1) → q j
-  --   --             ; (k = i0) → transp (λ l → A (i ∨ l)) i (fromPathPFiller j)
-  --   --             ; (k = i1) → ∧∨Square i j
-  --   --             })
-  --   --         (transp (λ l → A (i ∨ ~ k ∨ l)) (i ∨ ~ k)
-  --   --             (transp (λ l → (A (i ∨ (~ k ∧ l)))) (k ∨ i)
-  --   --             (transp (λ l → A (i ∧ l)) (~ i)
-  --   --                 x)))
-  --   --         where
-  --   --         fromPathPFiller : _
-  --   --         fromPathPFiller =
-  --   --             hfill
-  --   --                 (λ j → λ
-  --   --                 { (i = i0) → x
-  --   --                 ; (i = i1) → q j })
-  --   --                 (inS (transp (λ j → A (i ∧ j)) (~ i) x))
+  module SqFillUnit where
+    SqFillUnit : SqFill ⊤
+    SqFillUnit {tt} {tt} l {tt} {tt} r u d i j =
+        hcomp (λ k → λ {(i = i0) → isProp⊤ tt (l j) k
+                      ; (i = i1) → isProp⊤ tt (r j) k
+                      ; (j = i0) → isProp⊤ tt (u i) k
+                      ; (j = i1) → isProp⊤ tt (d i) k}) tt
+        where
+        isProp⊤ : (a b : ⊤) → a ≡ b
+        isProp⊤ tt tt _ = tt
 
-  --   --         slide : I → _
-  --   --         slide i = transp (λ l → A (i ∨ l)) i (transp (λ l → A (i ∧ l)) (~ i) x)
+  module SqFillBool where
+    data Bool : Type where
+        true : Bool
+        false : Bool
+    {-# BUILTIN BOOL Bool #-}
 
-  --   --         ∧∨Square : I → I → _
-  --   --         ∧∨Square i j =
-  --   --             hcomp
-  --   --                 (λ l → λ
-  --   --                 { (i = i0) → slide j
-  --   --                 ; (i = i1) → q (j ∧ l)
-  --   --                 ; (j = i0) → slide i
-  --   --                 ; (j = i1) → q (i ∧ l)
-  --   --                 })
-  --   --                 (slide (i ∨ j))
-  --   --     PathPIsoPath A x y .Iso.leftInv q k i =
-  --   --         outS
-  --   --         (hcomp-unique
-  --   --             (λ j → λ
-  --   --             { (i = i0) → x
-  --   --             ; (i = i1) → transp (λ l → A (j ∨ l)) j (q j)
-  --   --             })
-  --   --             (inS (transp (λ l → A (i ∧ l)) (~ i) x))
-  --   --             (λ j → inS (transp (λ l → A (i ∧ (j ∨ l))) (~ i ∨ j) (q (i ∧ j)))))
-  --   --         k
+    true≠false : true ≡ false → ⊥
+    true≠false p = transport (cong isTrue p) tt
+        where
+        isTrue : Bool → Type
+        isTrue true = ⊤
+        isTrue false = ⊥
 
-  --   --     isPropRetract : ∀ {ℓ} → {A B : Type ℓ} (f : A → B) (g : B → A) (h : (x : A) → g (f x) ≡ x) → isProp B → isProp A
-  --   --     isPropRetract f g h p x y i =
-  --   --         hcomp
-  --   --         (λ j → λ
-  --   --             { (i = i0) → h x j
-  --   --             ; (i = i1) → h y j})
-  --   --         (g (p (f x) (f y) i))
+    kBoolt : (p : true ≡ true) → p ≡ refl
+    kBoolt p j = {!!}
 
-  --   --     -- Kan operations hidden in:
-  --   --     -- - isPropRetract has 1 hcomp
-  --   --     -- - PathPIsoPath .Iso.leftInv needs uniqueness of hcomp, and also several hcomps
-  --   --     SqFill→PathPIsProp : (A : I → Type) (SqFillA : SqFill (A i1)) (x : A i0) (y : A i1) → isProp (PathP A x y)
-  --   --     SqFill→PathPIsProp A SqFillA x y = isPropRetract fromPathP (pathToPathP A x y) (PathPIsoPath A x y .Iso.leftInv) (λ p q → SqFillA p q refl refl)
+    Cover : (c c' : Bool) → Type
+    -- Cover (inl x) (inl y) = x ≡ y
+    -- Cover (inr x) (inr y) = x ≡ y
+    -- Cover _ _ = ⊥
 
-  -- -- data _+_ (A B : Type) : Type where
-  -- --     inl : A → A + B
-  -- --     inr : B → A + B
+    reflCode : (c : Bool) → Cover c c
+    -- reflCode (inl x) = refl
+    -- reflCode (inr x) = refl
 
-  -- -- data ⊥ : Type where
+    encode : {c c' : Bool} → c ≡ c' → Cover c c'
+    encode {c = c} p = transport (λ i → Cover c (p i)) (reflCode c)
 
-  -- -- ⊥-elim : {A : Type} (x : ⊥) → A
-  -- -- ⊥-elim ()
+    decode : {c c' : Bool} → Cover c c' → c ≡ c'
+    -- decode {c = inl x} {c' = inl y} = cong inl
+    -- decode {c = inr x} {c' = inr y} = cong inr
 
-  -- -- data ⊤ : Type where
-  -- --     tt : ⊤
+    decodeEncode : {c c' : Bool} (p : c ≡ c') → decode (encode p) ≡ p
+    -- decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
+    -- decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
 
-  -- -- module SqFillCpdt (A A' : Type) (SqFillA : SqFill A) (SqFillA' : SqFill A') where
-  -- --   inl≠inr : {A B : Type} (x : A) (y : B) → (inl x ≡ inr y) → ⊥
-  -- --   inl≠inr {A} {B} x y p = transport (cong isLeft p) tt
-  -- --       where
-  -- --       isLeft : (A + B) → Type
-  -- --       isLeft (inl x) = ⊤
-  -- --       isLeft (inr y) = ⊥
-
-  -- --   Cover : {A B : Type} (c c' : A + B) → Type
-  -- --   Cover (inl x) (inl y) = x ≡ y
-  -- --   Cover (inr x) (inr y) = x ≡ y
-  -- --   Cover _ _ = ⊥
-
-  -- --   reflCode : {A B : Type} (c : A + B) → Cover c c
-  -- --   reflCode (inl x) = refl
-  -- --   reflCode (inr x) = refl
-
-  -- --   encode : {A B : Type} {c c' : A + B} → c ≡ c' → Cover c c'
-  -- --   encode {c = c} p = transport (λ i → Cover c (p i)) (reflCode c)
-
-  -- --   decode : {A B : Type} {c c' : A + B} → Cover c c' → c ≡ c'
-  -- --   decode {c = inl x} {c' = inl y} = cong inl
-  -- --   decode {c = inr x} {c' = inr y} = cong inr
-
-  -- --   decodeEncode : {A B : Type} {c c' : A + B} (p : c ≡ c') → decode (encode p) ≡ p
-  -- --   -- decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
-  -- --   decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
-  -- --   decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
-
-  -- --   SqFillCoproduct : SqFill (A + A')
-  -- --   SqFillCoproduct {inl lu} {inl ld} l {inl ru} {inl rd} r u d i j =
-  -- --       (hcomp (λ where
-  -- --           k (i = i0) → decodeEncode l k j
-  -- --           k (i = i1) → decodeEncode r k j
-  -- --           k (j = i0) → decodeEncode u k i
-  -- --           k (j = i1) → decodeEncode d k i)
-  -- --       (inl {A} {A'} (SqFillA (encode l) (encode r) (encode u) (encode d) i j)))
-  -- --   SqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j =
-  -- --       (hcomp (λ where
-  -- --           k (i = i0) → decodeEncode l k j
-  -- --           k (i = i1) → decodeEncode r k j
-  -- --           k (j = i0) → decodeEncode u k i
-  -- --           k (j = i1) → decodeEncode d k i)
-  -- --       (inr {A} {A'} (SqFillA' (encode l) (encode r) (encode u) (encode d) i j)))
-  -- --   SqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr x y l)
-  -- --   SqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr y x (sym l))
-  -- --   SqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr x y u)
-  -- --   SqFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥-elim (inl≠inr y x (sym u))
-  -- --   SqFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr x y d)
-  -- --   SqFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr y x (sym d))
-  -- --   -- SqFillCoproduct {_} {_} _ {inl x} {inr y} r _ _ = ⊥-elim (inl≠inr x y r)
-  -- --   -- SqFillCoproduct {_} {_} _ {inr x} {inl y} r _ _ = ⊥-elim (inl≠inr y x (sym r))
-
-  -- -- module SqFillPath (A : Type) (SqFillA : SqFill A) where
-  -- --   SqFillPath : {a b : A} → SqFill (a ≡ b)
-  -- --   SqFillPath {_} {_} {lu} l r u d i j =
-  -- --       hcomp (λ k → λ {(i = i0) → isPropa≡b lu (l j) k
-  -- --                   ; (i = i1) → isPropa≡b lu (r j) k
-  -- --                   ; (j = i0) → isPropa≡b lu (u i) k
-  -- --                   ; (j = i1) → isPropa≡b lu (d i) k}) lu
-  -- --       where
-  -- --       isPropa≡b : {a b : A} (p q : a ≡ b) → p ≡ q
-  -- --       isPropa≡b p q = SqFillA p q refl refl
-
-  -- data W (S : Type) (P : S → Type) : Type where
-  --   sup-W : (s : S) → (P s → W S P) → W S P
-
-  -- data Bool : Type where
-  --   true : Bool
-  --   false : Bool
-
-  -- data ⊥ : Type where
-
-  -- data ⊤ : Type where
-  --   tt : ⊤
-
-  -- NatW : Type
-  -- NatW = W Bool λ { true → ⊥ ; false → ⊤}
-
-  -- data ℕ : Type where
-  --   zero : ℕ
-  --   suc : ℕ → ℕ
-
-  -- Nat→NatW : ℕ → NatW
-  -- Nat→NatW zero = sup-W true (λ ())
-  -- Nat→NatW (suc n) = sup-W false (λ tt → Nat→NatW n)
-
-  -- NatW→Nat : NatW → ℕ
-  -- NatW→Nat (sup-W true x) = zero
-  -- NatW→Nat (sup-W false x) = suc (NatW→Nat (x tt))
-
-  -- invℕ : (n : ℕ) → NatW→Nat (Nat→NatW n) ≡ n
-  -- invℕ zero = refl
-  -- invℕ (suc n) = cong suc (invℕ n)
-
-  -- invNatW : (x : NatW) → Nat→NatW (NatW→Nat x) ≡ x
-  -- invNatW (sup-W true x) = cong (sup-W true) {!!}
-  -- invNatW (sup-W false x) = cong (sup-W false) {!λ i tt → invNatW (x tt)!}
-
-  -- doubleW : NatW → NatW
-  -- doubleW (sup-W true x) = sup-W true x
-  -- doubleW (sup-W false x) = sup-W false (λ _ → sup-W false (λ _ → sup-W true λ ()))
-
-  -- W-elim : ∀ {S P} → (B : W S P → Type) → (Bsup-W : (s : S) → (f : P s → W S P) → B (sup-W s f)) → (w : W S P) → B w
-  -- W-elim {S} {P} B Bsup-W (sup-W s x) = Bsup-W s x
+    SqFillBool : SqFill Bool
+    SqFillBool {true} {true} l {true} {true} r u d i j = {!!}
+    SqFillBool {false} {false} l {false} {false} r u d i j = {!!}
+    -- SqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr x y l)
+    -- SqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr y x (sym l))
+    -- SqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr x y u)
+    -- SqFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥-elim (inl≠inr y x (sym u))
+    -- SqFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr x y d)
+    -- SqFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr y x (sym d))
 
   -- module SqFillW
   --   (S : Type) (P : S → Type)
   --   (SqFillS : SqFill S) (SqFillP : (s : S) → SqFill (P s))
   --   where
+  --
+  --   data W (S : Type) (P : S → Type) : Type where
+  --       sup-W : (s : S) → (P s → W S P) → W S P
+
+  --   NatW : Type
+  --   NatW = W Bool λ { true → ⊥ ; false → ⊤}
+
+  --   data ℕ : Type where
+  --       zero : ℕ
+  --       suc : ℕ → ℕ
+
+  --   Nat→NatW : ℕ → NatW
+  --   Nat→NatW zero = sup-W true (λ ())
+  --   Nat→NatW (suc n) = sup-W false (λ tt → Nat→NatW n)
+
+  --   NatW→Nat : NatW → ℕ
+  --   NatW→Nat (sup-W true x) = zero
+  --   NatW→Nat (sup-W false x) = suc (NatW→Nat (x tt))
+
+  --   invℕ : (n : ℕ) → NatW→Nat (Nat→NatW n) ≡ n
+  --   invℕ zero = refl
+  --   invℕ (suc n) = cong suc (invℕ n)
+
+  --   invNatW : (x : NatW) → Nat→NatW (NatW→Nat x) ≡ x
+  --   invNatW (sup-W true x) = cong (sup-W true) {!!}
+  --   invNatW (sup-W false x) = cong (sup-W false) {!λ i tt → invNatW (x tt)!}
+
+  --   doubleW : NatW → NatW
+  --   doubleW (sup-W true x) = sup-W true x
+  --   doubleW (sup-W false x) = sup-W false (λ _ → sup-W false (λ _ → sup-W true λ ()))
+
+  --   W-elim : ∀ {S P} → (B : W S P → Type) → (Bsup-W : (s : S) → (f : P s → W S P) → B (sup-W s f)) → (w : W S P) → B w
+  --   W-elim {S} {P} B Bsup-W (sup-W s x) = Bsup-W s x
+
 
   --   CoverW : (x y : W S P) → Type
   --   CoverW (sup-W s x) (sup-W s' x') = Σ (s ≡ s') (λ p → PathP (λ i → (P (p i) → W S P)) x x')
@@ -447,22 +370,22 @@ module SqFill where
   --         sqs = SqFillS (encodeW l .fst) (encodeW r .fst) (encodeW u .fst) (encodeW d .fst)
   --     -- {!sup-W (SqFillS ? ? ? ? i j) ?!}
 
-  -- -- -- PathP types
-  -- -- -- Regular Inductive types (Indexed-W Types)
-  -- -- -- HITs (just add hidden uip contrctor)
-  -- -- -- Universe
-  -- -- -- lemma: UIP after transport
-  -- -- -- ifwe have hcomped paths, transporting along it is just transporting along the open box
-  -- -- -- andreas's example: a hollow square in the universe, the bottom square is the constant top left type,
-  -- -- -- can the types of the faces be the same
-  -- -- --
-  -- -- -- Injectivity of type formers: bool to bool is not equal to top to 4
-  -- -- -- Injectivity of type formers in OTT?
-  -- -- -- McBride's "John Major" equality (of heterogeneous equality. can it help with the Pi/Sigma complication?)
-  -- -- --
+  -- -- PathP types
+  -- -- Regular Inductive types (Indexed-W Types)
+  -- -- HITs (just add hidden uip contrctor)
+  -- -- Universe
+  -- -- lemma: UIP after transport
+  -- -- ifwe have hcomped paths, transporting along it is just transporting along the open box
+  -- -- andreas's example: a hollow square in the universe, the bottom square is the constant top left type,
+  -- -- can the types of the faces be the same
+  -- --
+  -- -- Injectivity of type formers: bool to bool is not equal to top to 4
+  -- -- Injectivity of type formers in OTT?
+  -- -- McBride's "John Major" equality (of heterogeneous equality. can it help with the Pi/Sigma complication?)
+  -- --
 
-  -- --   -- data int : Type where
-  -- --   --   zero : int
-  -- --   --   succ : int → int
-  -- --   --   pred : int → int
-  -- --   --   sp : succ pred n ≡
+  --   -- data int : Type where
+  --   --   zero : int
+  --   --   succ : int → int
+  --   --   pred : int → int
+  --   --   sp : succ pred n ≡

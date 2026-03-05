@@ -1,6 +1,5 @@
--- {-# OPTIONS --cubical=no-glue --guardedness #-}
-{-# OPTIONS --cubical=full --guardedness #-}
--- {-# OPTIONS -v cubical.prim.uip:70 #-}
+{-# OPTIONS --cubical=uip #-}
+{-# OPTIONS -v cubical.prim.uip:70 #-}
 
 open import Agda.Primitive using () renaming (Set to Type)
 open import Agda.Primitive.Cubical public
@@ -16,94 +15,44 @@ open import Agda.Primitive.Cubical public
 open import Agda.Builtin.Cubical.Path public
 open import Agda.Builtin.Sigma
 
-open import Cubical.Data.Empty.Base
+-- open import Cubical.Data.Empty.Base
 
--- open import SqFill
--- -- open import SqPFill
+open import SqFill
+-- open import SqPFill
 
--- -- primitive primIMin : I → I → I
--- primitive
---   prim^sqFill : (A : Type) → SqFill A
+-- primitive primIMin : I → I → I
+primitive
+  prim^sqFill : (A : Type) → SqFill A
 
--- sqFill = prim^sqFill
+sqFill = prim^sqFill
 
--- -- module hello (A B : Type) where
--- --   p : SqFill (A → B)
--- --   p = prim^sqFill (A → B)
+module hello (A B : Type) where
+  p : SqFill (A → B)
+  p = prim^sqFill (A → B)
 
--- --   postulate SqFillB : SqFill B
+  postulate SqFillB : SqFill B
 
--- --   q = SqFill.SqFillPi.SqFillPiAB A (λ ^ → B) (λ _ → prim_sqFill B)
+  q = SqFill.SqFillPi.SqFillPiAB A (λ ^ → B) (λ _ → sqFill B)
 
--- --   check : p ≡ q
--- --   check k = {!!}
--- --   -- p' : p ≡ SqFill.SqFillPi.SqFillPiAB A (λ _ → B) λ _ → prim_sqFill B
--- --   -- p' k l r u d i j a = {!p l r u d i j a!}
--- --   -- p' k = {!!}
+  check : p ≡ q
+  check k = p
 
--- module hello-dep (A : Type) (B : A → Type)
---   -- (SqFillB : (a : A) → SqFill (B a))
---   where
---   p : SqFill ((a : A) → B a)
---   -- p = λ l r u d i j → prim^sqFill ((a : A) → B a) l r u d i j
---   p = prim^sqFill ((a : A) → B a)
+module hello-dep (A : Type) (B : A → Type)
+  where
+  piPrim : SqFill ((a : A) → B a)
+  piPrim = sqFill ((a : A) → B a)
 
---   sqFillB : (a : A) → SqFill (B a)
---   sqFillB a = prim^sqFill (B a)
+  piManual : SqFill ((a : A) → B a)
+  piManual = SqFill.SqFillPi.SqFillPiAB A (λ a → B a) (λ a → sqFill (B a))
 
---   -- q : {a₀₀ a₀₁ : (a : A) → B a} (a₀₋ : a₀₀ ≡ a₀₁)
---   --   {a₁₀ a₁₁ : (a : A) → B a} (a₁₋ : a₁₀ ≡ a₁₁)
---   --   (a₋₀ : a₀₀ ≡ a₁₀) (a₋₁ : a₀₁ ≡ a₁₁)
---   --   → PathP (λ i → a₋₀ i ≡ a₋₁ i) a₀₋ a₁₋
---   q : SqFill ((a : A) → B a)
---   -- q (lu) (ld) = SqFillPiAB A (λ a → B a) (λ a (lu) (ld) → prim^sqFill (B a) (lu) (ld)) (lu) (ld)
---   q = SqFill.SqFillPi.SqFillPiAB A (λ a → B a) (λ a → prim^sqFill (B a))
---   -- q = SqFill.SqFillPi.SqFillPiAB A (λ a → B a) sqFillB
+  checkPi : (λ {lu} {ld} → piPrim {lu} {ld}) ≡ piManual
+  checkPi _ = piPrim
 
---   -- postulate
---   --   lu ld ru rd : (a : A) → B a
---   --   l : lu ≡ ld
---   --   r : ru ≡ rd
---   --   u : lu ≡ ru
---   --   d : ld ≡ rd
---   --   i j : I
---   --   a : A
---   -- check : _≡_ {A = SqFill ((a : A) → B a)} (λ {lu} {ld} → p {lu} {ld}) (λ {lu} {ld} → q {lu} {ld})
---   check : (λ {lu} {ld} → p {lu} {ld}) ≡ q
---   -- check = {!!}
---   -- check : (λ {lu} {ld} → p {lu} {ld}) ≡ q
---   -- check : (λ {lu} {ld} → q {lu} {ld}) ≡ p
---     -- {a₀₀ a₀₁ : A} (a₀₋ : a₀₀ ≡ a₀₁)
---     -- {a₁₀ a₁₁ : A} (a₁₋ : a₁₀ ≡ a₁₁)
---     -- (a₋₀ : a₀₀ ≡ a₁₀) (a₋₁ : a₀₁ ≡ a₁₁)
---     -- → PathP (λ i → a₋₀ i ≡ a₋₁ i) a₀₋ a₁₋
---   -- check k {lu} {ld} l {ru} {rd} r u d i j a = {!q!}
---   -- check = λ i a₀₋ a₁₋ a₋₀ a₋₁ i₁ i₂ a → {!!}
---   -- check k l r u d i j a = {!!}
---   -- check = λ i₁ a₀₀ a₀₁ a₀₋ a₁₀ a₁₁ a₁₋ a₋₀ a₋₁ i₂ i₃ a₁ → {!!}
---   -- check k l r u d i j a =  prim^sqFill (B a) (λ i → l i a) (λ i → r i a) (λ i → u i a) (λ i → d i a) i j
---   check _ = p
+  sigmaPrim : SqFill (Σ A (λ a → B a))
+  sigmaPrim = sqFill (Σ A (λ a → B a))
 
---   -- sigma = sqFill (Σ A (λ a → B a))
---   -- sigma' = sqFill (Σ A (λ a → B a))
---   -- checks : (λ {lu} {ld} → sigma {lu} {ld}) ≡ sigma'
---   -- checks = λ i a₀₋ a₁₋ a₋₀ a₋₁ i₁ i₂ → {!!}
---   -- check k = λ a₀₀ a₀₁ a₀₋ a₁₀ a₁₁ a₁₋ a₋₀ a₋₁ → {!prim^sqFill!}
---   -- check = {!!}
---   -- check = λ i a₀₋ a₁₋ a₋₀ a₋₁ i₁ i₂ a → {!!}
---   -- p' : p ≡ SqFill.SqFillPi.SqFillPiAB A (λ _ → B) λ _ → prim^sqFill B
---   -- p' k l r u d i j a = {!p l r u d i j a!}
---   -- p' k = {!!}
+  sigmaManual : SqFill (Σ A (λ a → B a))
+  sigmaManual = SqFill.SqFillSigma.SqFillSigmaAB A (sqFill A) B λ a → sqFill (B a)
 
--- -- module hello-dep' (A : Type) (B : A → Type) (SqFillB : (a : A) → SqFill (B a)) where
--- --   data Bool : Type where
--- --     true : Bool
--- --     false : Bool
-
--- --   p : SqFill Bool
--- --   p = prim^sqFill Bool
-
--- --   q = SqFill.SqFillPi.SqFillPiAB A (λ a → B a) (λ a → prim^sqFill (B a))
-
--- --   check : p ≡ q
--- --   check = {! !}
+  checkSigma : (λ {lu} {ld} → sigmaPrim {lu} {ld}) ≡ sigmaManual
+  checkSigma _ = sigmaPrim
