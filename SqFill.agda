@@ -247,38 +247,33 @@ module SqFill where
         isTrue true = ⊤
         isTrue false = ⊥
 
-    kBoolt : (p : true ≡ true) → p ≡ refl
-    kBoolt p j = {!!}
+    K-Bool : (P : {b : Bool} → b ≡ b → Type)
+        → (∀{b} → P {b} refl)
+        → ∀{b} → (q : b ≡ b) → P q
+    K-Bool P Pr {false} = J (λ{ false q → P q ; true _ → ⊥ }) Pr
+    K-Bool P Pr {true}  = J (λ{ true q → P q ; false _ → ⊥ }) Pr
 
-    Cover : (c c' : Bool) → Type
-    -- Cover (inl x) (inl y) = x ≡ y
-    -- Cover (inr x) (inr y) = x ≡ y
-    -- Cover _ _ = ⊥
-
-    reflCode : (c : Bool) → Cover c c
-    -- reflCode (inl x) = refl
-    -- reflCode (inr x) = refl
-
-    encode : {c c' : Bool} → c ≡ c' → Cover c c'
-    encode {c = c} p = transport (λ i → Cover c (p i)) (reflCode c)
-
-    decode : {c c' : Bool} → Cover c c' → c ≡ c'
-    -- decode {c = inl x} {c' = inl y} = cong inl
-    -- decode {c = inr x} {c' = inr y} = cong inr
-
-    decodeEncode : {c c' : Bool} (p : c ≡ c') → decode (encode p) ≡ p
-    -- decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
-    -- decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
+    KBool : {b : Bool} → (p : b ≡ b) → p ≡ refl
+    KBool {true} = J (λ{ true q → q ≡ refl ; false _ → ⊥ }) refl
+    KBool {false} = J (λ{ false q → q ≡ refl ; true _ → ⊥ }) refl
 
     SqFillBool : SqFill Bool
-    SqFillBool {true} {true} l {true} {true} r u d i j = {!!}
-    SqFillBool {false} {false} l {false} {false} r u d i j = {!!}
-    -- SqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr x y l)
-    -- SqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr y x (sym l))
-    -- SqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr x y u)
-    -- SqFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥-elim (inl≠inr y x (sym u))
-    -- SqFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr x y d)
-    -- SqFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr y x (sym d))
+    SqFillBool {true} {true} l {true} {true} r u d i j =
+      (hcomp (λ where k (i = i0) → KBool l (~ k) j
+                      k (i = i1) → KBool r (~ k) j
+                      k (j = i0) → KBool u (~ k) i
+                      k (j = i1) → KBool d (~ k) i) true)
+    SqFillBool {false} {false} l {false} {false} r u d i j =
+      (hcomp (λ where k (i = i0) → KBool l (~ k) j
+                      k (i = i1) → KBool r (~ k) j
+                      k (j = i0) → KBool u (~ k) i
+                      k (j = i1) → KBool d (~ k) i) false)
+    SqFillBool {true} {false} l _ _ _ = ⊥-elim (true≠false l)
+    SqFillBool {false} {true} l _ _ _ = ⊥-elim (true≠false (sym l))
+    SqFillBool {true} {_} _ {false} _ u _ = ⊥-elim (true≠false u)
+    SqFillBool {false} {_} _ {true} _ u _ = ⊥-elim (true≠false (sym u))
+    SqFillBool {_} {true} _ {_} {false} _ _ d = ⊥-elim (true≠false d)
+    SqFillBool {_} {false} _ {_} {true} _ _ d = ⊥-elim (true≠false (sym d))
 
   -- module SqFillW
   --   (S : Type) (P : S → Type)
