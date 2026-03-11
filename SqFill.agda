@@ -236,10 +236,7 @@ module SqFill where
   {-# BUILTIN SQFILLUNIT SqFillUnit.SqFillUnit #-}
 
   module SqFillBool where
-    data Bool : Type where
-        true : Bool
-        false : Bool
-    {-# BUILTIN BOOL Bool #-}
+    open import Agda.Builtin.Bool
 
     true≠false : true ≡ false → ⊥
     true≠false p = transport (cong isTrue p) tt
@@ -275,6 +272,8 @@ module SqFill where
     SqFillBool {false} {_} _ {true} _ u _ = ⊥-elim (true≠false (sym u))
     SqFillBool {_} {true} _ {_} {false} _ _ d = ⊥-elim (true≠false d)
     SqFillBool {_} {false} _ {_} {true} _ _ d = ⊥-elim (true≠false (sym d))
+
+  {-# BUILTIN SQFILLBOOL SqFillBool.SqFillBool #-}
 
   -- module SqFillW
   --   (S : Type) (P : S → Type)

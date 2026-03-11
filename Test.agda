@@ -68,3 +68,14 @@ module hello-dep (A : Type) (B : A → Type)
   checkUnit : (λ {lu} {ld} → unitPrim {lu} {ld}) ≡ unitManual
   checkUnit _ = unitPrim
 
+  open import Agda.Builtin.Bool
+
+  boolPrim : SqFill Bool
+  boolPrim = sqFill Bool
+
+  boolManual : SqFill Bool
+  boolManual = SqFill.SqFillBool.SqFillBool
+
+  checkBool : (λ {lu} {ld} → boolPrim {lu} {ld}) ≡ boolManual
+  checkBool _ = boolPrim
+
