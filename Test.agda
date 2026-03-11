@@ -34,7 +34,7 @@ module hello (A B : Type) where
 
   q = SqFill.SqFillPi.SqFillPiAB A (λ ^ → B) (λ _ → sqFill B)
 
-  check : p ≡ q
+  check : (λ {lu} {ld} → p {lu} {ld}) ≡ q
   check k = p
 
 module hello-dep (A : Type) (B : A → Type)
