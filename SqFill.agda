@@ -154,8 +154,7 @@ module SqFill where
   ⊥-elim : {A : Type} (x : ⊥) → A
   ⊥-elim ()
 
-  data ⊤ : Type where
-      tt : ⊤
+  open import Agda.Builtin.Unit
 
   module EncodeDecode {A B : Type} where
     inl≠inr : (x : A) (y : B) → (inl x ≡ inr y) → ⊥
@@ -233,6 +232,8 @@ module SqFill where
         where
         isProp⊤ : (a b : ⊤) → a ≡ b
         isProp⊤ tt tt _ = tt
+
+  {-# BUILTIN SQFILLUNIT SqFillUnit.SqFillUnit #-}
 
   module SqFillBool where
     data Bool : Type where

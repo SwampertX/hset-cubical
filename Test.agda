@@ -56,3 +56,15 @@ module hello-dep (A : Type) (B : A → Type)
 
   checkSigma : (λ {lu} {ld} → sigmaPrim {lu} {ld}) ≡ sigmaManual
   checkSigma _ = sigmaPrim
+
+  open import Agda.Builtin.Unit
+
+  unitPrim : SqFill ⊤
+  unitPrim = sqFill ⊤
+
+  unitManual : SqFill ⊤
+  unitManual = SqFill.SqFillUnit.SqFillUnit
+
+  checkUnit : (λ {lu} {ld} → unitPrim {lu} {ld}) ≡ unitManual
+  checkUnit _ = unitPrim
+
