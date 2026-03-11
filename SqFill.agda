@@ -255,6 +255,9 @@ module SqFill where
     KBool {true} = J (λ{ true q → q ≡ refl ; false _ → ⊥ }) refl
     KBool {false} = J (λ{ false q → q ≡ refl ; true _ → ⊥ }) refl
 
+    -- it's also possible to implement this term by inspecting the paths instead
+    -- then sqfill refl refl refl refl would definitionally to our term
+    -- but right now it doesn't (Jrefl is not definitional)
     SqFillBool : SqFill Bool
     SqFillBool {true} {true} l {true} {true} r u d i j =
       (hcomp (λ where k (i = i0) → KBool l (~ k) j

@@ -79,3 +79,24 @@ module hello-dep (A : Type) (B : A → Type)
   checkBool : (λ {lu} {ld} → boolPrim {lu} {ld}) ≡ boolManual
   checkBool _ = boolPrim
 
+  ty : Type
+  ty = ((⊤ → ⊤) → Σ Bool (λ{true → ⊤; false → Bool}))
+
+  tm : ty
+  -- tm = λ z → true , z tt
+  tm = λ z → false , false
+
+  adv : SqFill ty
+  adv = sqFill _
+
+  open import Helper using (refl)
+
+  sq = adv {tm} {tm} refl {tm} {tm} refl refl refl
+
+  test : sq ≡ refl
+  test k i j = λ z → false , false
+
+  -- evaluate: try it on the projects we listed on TYPES abstract,
+  --   rephrase in our primitives in necessary.
+  -- theoretical: is our system canonical? maybe look into how hcomp for inductive types work.
+  -- propose some venues for submitting this as a paper
