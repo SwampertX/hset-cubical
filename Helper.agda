@@ -41,6 +41,14 @@ module Helper where
   cong f p i = f (p i)
   {-# INLINE cong #-}
 
+  cong₂ : ∀{ℓ ℓ'} {A : Type ℓ} {B : A → Type ℓ'} {x y : A} {C : (a : A) → (b : B a) → Type ℓ} →
+          (f : (a : A) → (b : B a) → C a b) →
+          (p : x ≡ y) →
+          {u : B x} {v : B y} (q : PathP (λ i → B (p i)) u v) →
+          PathP (λ i → C (p i) (q i)) (f x u) (f y v)
+  cong₂ f p q i = f (p i) (q i)
+  {-# INLINE cong₂ #-}
+
   Square : ∀{ℓ} {A : Type ℓ}
     {a₀₀ a₀₁ : A} (a₀₋ : a₀₀ ≡ a₀₁)
     {a₁₀ a₁₁ : A} (a₁₋ : a₁₀ ≡ a₁₁)
