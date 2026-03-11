@@ -156,36 +156,36 @@ module SqFill where
 
   open import Agda.Builtin.Unit
 
-  module EncodeDecode {A B : Type} where
-    inl≠inr : (x : A) (y : B) → (inl x ≡ inr y) → ⊥
-    inl≠inr x y p = transport (cong isLeft p) tt
-        where
-        isLeft : (A + B) → Type
-        isLeft (inl x) = ⊤
-        isLeft (inr y) = ⊥
-
-    Cover : (c c' : A + B) → Type
-    Cover (inl x) (inl y) = x ≡ y
-    Cover (inr x) (inr y) = x ≡ y
-    Cover _ _ = ⊥
-
-    reflCode : (c : A + B) → Cover c c
-    reflCode (inl x) = refl
-    reflCode (inr x) = refl
-
-    encode : {c c' : A + B} → c ≡ c' → Cover c c'
-    encode {c = c} p = transport (λ i → Cover c (p i)) (reflCode c)
-
-    decode : {c c' : A + B} → Cover c c' → c ≡ c'
-    decode {c = inl x} {c' = inl y} = cong inl
-    decode {c = inr x} {c' = inr y} = cong inr
-
-    decodeEncode : {c c' : A + B} (p : c ≡ c') → decode (encode p) ≡ p
-    decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
-    decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
-
 
   module SqFillCpdt (A A' : Type) (SqFillA : SqFill A) (SqFillA' : SqFill A') where
+    module EncodeDecode {A B : Type} where
+        inl≠inr : (x : A) (y : B) → (inl x ≡ inr y) → ⊥
+        inl≠inr x y p = transport (cong isLeft p) tt
+            where
+            isLeft : (A + B) → Type
+            isLeft (inl x) = ⊤
+            isLeft (inr y) = ⊥
+
+        Cover : (c c' : A + B) → Type
+        Cover (inl x) (inl y) = x ≡ y
+        Cover (inr x) (inr y) = x ≡ y
+        Cover _ _ = ⊥
+
+        reflCode : (c : A + B) → Cover c c
+        reflCode (inl x) = refl
+        reflCode (inr x) = refl
+
+        encode : {c c' : A + B} → c ≡ c' → Cover c c'
+        encode {c = c} p = transport (λ i → Cover c (p i)) (reflCode c)
+
+        decode : {c c' : A + B} → Cover c c' → c ≡ c'
+        decode {c = inl x} {c' = inl y} = cong inl
+        decode {c = inr x} {c' = inr y} = cong inr
+
+        decodeEncode : {c c' : A + B} (p : c ≡ c') → decode (encode p) ≡ p
+        decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
+        decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
+
     open EncodeDecode
 
     SqFillCoproduct : SqFill (A + A')
