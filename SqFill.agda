@@ -444,6 +444,62 @@ module SqFill where
   --   -- decode : (xs ys : List A) → ListCover xs ys → xs ≡ ys
   --   -- decode [] [] nilListCover = refl
   --   -- decode (x ∷ xs) (y ∷ ys) (consListCover p ps) = cong₂ _∷_ p (decode xs ys ps)
+
+
+  module SqFillMaybe (A : Type) (sqFillA : SqFill A) where
+    open import Agda.Builtin.Maybe
+
+    module EncodeDecode where
+        nothing≠just : {x : A} → (nothing ≡ just x) → ⊥
+        nothing≠just p = transport (cong isNothing p) tt
+            where
+            isNothing : Maybe A → Type
+            isNothing nothing = ⊤
+            isNothing (just y) = ⊥
+
+        MaybeCover : (c c' : Maybe A) → Type
+        MaybeCover nothing nothing = ⊤
+        MaybeCover (just x) (just y) = x ≡ y
+        MaybeCover _ _ = ⊥
+
+        reflCode : (c : Maybe A) → MaybeCover c c
+        reflCode nothing = tt
+        reflCode (just x) = refl
+
+        encode : {c c' : Maybe A} → c ≡ c' → MaybeCover c c'
+        encode {c = c} p = transport (λ i → MaybeCover c (p i)) (reflCode c)
+
+        decode : {c c' : Maybe A} → MaybeCover c c' → c ≡ c'
+        decode {c = nothing} {c' = nothing} _ = refl
+        decode {c = just x} {c' = just y} = cong just
+
+        decodeEncode : {c c' : Maybe A} (p : c ≡ c') → decode (encode p) ≡ p
+        decodeEncode {c = nothing} = J (λ c' p → decode (encode p) ≡ p) refl
+        decodeEncode {c = just x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong just) (transportRefl refl))
+
+    open EncodeDecode
+
+    SqFillMaybe : SqFill (Maybe A)
+    SqFillMaybe {nothing} {nothing} l {nothing} {nothing} r u d i j =
+        (hcomp (λ where
+            k (i = i0) → decodeEncode l k j
+            k (i = i1) → decodeEncode r k j
+            k (j = i0) → decodeEncode u k i
+            k (j = i1) → decodeEncode d k i) nothing)
+    SqFillMaybe {just lu} {just ld} l {just ru} {just rd} r u d i j =
+        (hcomp (λ where
+            k (i = i0) → decodeEncode l k j
+            k (i = i1) → decodeEncode r k j
+            k (j = i0) → decodeEncode u k i
+            k (j = i1) → decodeEncode d k i)
+        (just (sqFillA (encode l) (encode r) (encode u) (encode d) i j)))
+    SqFillMaybe {nothing} {just y} l _ _ _ = ⊥-elim (nothing≠just l)
+    SqFillMaybe {just x} {nothing} l _ _ _ = ⊥-elim (nothing≠just (sym l))
+    SqFillMaybe {nothing} {_} _ {just y} _ u _ = ⊥-elim (nothing≠just u)
+    SqFillMaybe {just x} {_} _ {nothing} _ u _ = ⊥-elim (nothing≠just (sym u))
+    SqFillMaybe {_} {nothing} _ {_} {just y} _ _ d = ⊥-elim (nothing≠just d)
+    SqFillMaybe {_} {just x} _ {_} {nothing} _ _ d = ⊥-elim (nothing≠just (sym d))
+
   -- module SqFillW
   --   (S : Type) (P : S → Type)
   --   (SqFillS : SqFill S) (SqFillP : (s : S) → SqFill (P s))
