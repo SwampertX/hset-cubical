@@ -147,10 +147,6 @@ module SqFill where
 
   data ⊥ : Type where
 
-  data _+_ (A B : Type) : Type where
-      inl : A → A + B
-      inr : B → A + B
-
   ⊥-elim : {A : Type} (x : ⊥) → A
   ⊥-elim ()
 
@@ -158,6 +154,10 @@ module SqFill where
 
 
   module SqFillCpdt (A A' : Type) (SqFillA : SqFill A) (SqFillA' : SqFill A') where
+    data _+_ (A B : Type) : Type where
+        inl : A → A + B
+        inr : B → A + B
+
     module EncodeDecode {A B : Type} where
         inl≠inr : (x : A) (y : B) → (inl x ≡ inr y) → ⊥
         inl≠inr x y p = transport (cong isLeft p) tt
@@ -349,6 +349,7 @@ module SqFill where
     SqFillNat {_} {zero} _ {_} {suc _} _ _ d = ⊥-elim (zero≠suc d)
     SqFillNat {_} {suc _} _ {_} {zero} _ _ d = ⊥-elim (zero≠suc (sym d))
 
+  {-# BUILTIN SQFILLNAT SqFillNat.SqFillNat #-}
 
   _×_ : Type → Type → Type
   A × B = Σ A (λ _ → B)
@@ -419,6 +420,8 @@ module SqFill where
     SqFillList {_ ∷ _} {_} _ {[]} {_} _ u _ = ⊥-elim (nil≠cons (sym u))
     SqFillList {_} {[]} _ {_} {_ ∷ _} _ _ d = ⊥-elim (nil≠cons d)
     SqFillList {_} {_ ∷ _} _ {_} {[]} _ _ d = ⊥-elim (nil≠cons (sym d))
+
+  -- {-# BUILTIN SQFILLLIST SqFillList.SqFillList #-}
 
   -- -- An experiment with the cover as a list as well. Matches on indexed datatypes, unsupported
   -- module SqFillList' (A : Type) (sqFillA : SqFill A) where
@@ -499,6 +502,8 @@ module SqFill where
     SqFillMaybe {just x} {_} _ {nothing} _ u _ = ⊥-elim (nothing≠just (sym u))
     SqFillMaybe {_} {nothing} _ {_} {just y} _ _ d = ⊥-elim (nothing≠just d)
     SqFillMaybe {_} {just x} _ {_} {nothing} _ _ d = ⊥-elim (nothing≠just (sym d))
+
+  -- {-# BUILTIN SQFILLMAYBE SqFillMaybe.SqFillMaybe #-}
 
   -- module SqFillW
   --   (S : Type) (P : S → Type)
