@@ -145,6 +145,14 @@ module SqFill where
 
   {-# BUILTIN SQFILLSIGMA SqFillSigma.SqFillSigmaAB #-}
 
+  module SqFillProduct (A : Type) (SqFillA : SqFill A) (B : Type) (SqFillB : SqFill B) where
+
+    SqFillProductAB : SqFill (Σ A (λ _ → B))
+    SqFillProductAB {lu} {ld} l {ru} {rd} r u d i j .fst = SqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j
+    SqFillProductAB {lu} {ld} l {ru} {rd} r u d i j .snd = SqFillB (cong snd l) (cong snd r) (cong snd u) (cong snd d) i j
+
+  {-# BUILTIN SQFILLPRODUCT SqFillProduct.SqFillProductAB #-}
+
   data ⊥ : Type where
 
   ⊥-elim : {A : Type} (x : ⊥) → A

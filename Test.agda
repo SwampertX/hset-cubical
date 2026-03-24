@@ -49,7 +49,10 @@ module hello-dep (A : Type) (B : A → Type)
   checkPi _ = piPrim
 
   sigmaPrim : SqFill (Σ A (λ a → B a))
-  sigmaPrim = sqFill (Σ A (λ a → B a))
+  sigmaPrim = {! sqFill (Σ A (λ a → B a)) !}
+
+  -- productPrim : SqFill (Σ A (λ _ → A))
+  -- productPrim = {! sqFill (Σ A (λ _ → A)) !}
 
   sigmaManual : SqFill (Σ A (λ a → B a))
   sigmaManual = SqFill.SqFillSigma.SqFillSigmaAB A (sqFill A) B λ a → sqFill (B a)
@@ -94,7 +97,58 @@ module hello-dep (A : Type) (B : A → Type)
   sq = adv {tm} {tm} refl {tm} {tm} refl refl refl
 
   test : sq ≡ refl
-  test k i j = λ z → false , false
+  test k i j =  λ z → false , false 
+
+  tySigma : Type
+  tySigma = Σ A (λ a → B a)
+
+  postulate
+    a : A
+    b : B a
+    C : (f : (a : A) → B a) → Type
+
+  tmSigma : tySigma
+  tmSigma = (a , b)
+
+  advSigma : SqFill tySigma
+  advSigma =  sqFill tySigma 
+
+  sqSigma = advSigma {tmSigma} refl refl refl refl
+
+  testSigma : sqSigma ≡ refl
+  testSigma _ _ _ = {!a , b!}
+
+  ty' = Σ ((a : A) → B a) (λ f → C f)
+
+  tm' : ty'
+  tm' = ({!!} , {!!})
+
+  sqty' = sqFill ty' {tm'} refl refl refl refl
+
+  testty' : sqty' ≡ refl
+  testty' _ _ _ = {! ,!}
+
+  tyProduct : Type
+  tyProduct = Σ A (λ _ → A)
+
+  tmProduct : tyProduct
+  tmProduct = (a , a)
+
+  advProduct : SqFill tyProduct
+  advProduct =  sqFill tyProduct
+
+  sqProduct = advProduct {tmProduct} refl refl refl refl
+
+  testProduct : sqProduct ≡ refl
+  testProduct _ _ _ = {!a , b!}
+
+  -- open import Agda.Builtin.Nat
+
+  -- NN : Type
+  -- NN = Nat × Nat
+
+  -- ℤ : Type
+  -- ℤ = Σ NN (λ{(n , m) → (k : Nat) → n + k ≡ m + k})
 
   -- evaluate: try it on the projects we listed on TYPES abstract,
   --   rephrase in our primitives in necessary.
