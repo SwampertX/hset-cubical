@@ -14,6 +14,7 @@ open import Agda.Primitive.Cubical public
 open import Agda.Primitive.Cubical public
 open import Agda.Builtin.Cubical.Path public
 open import Agda.Builtin.Sigma
+open import Helper using (refl)
 
 -- open import Cubical.Data.Empty.Base
 
@@ -49,7 +50,7 @@ module hello-dep (A : Type) (B : A → Type)
   checkPi _ = piPrim
 
   sigmaPrim : SqFill (Σ A (λ a → B a))
-  sigmaPrim = {! sqFill (Σ A (λ a → B a)) !}
+  sigmaPrim =  sqFill (Σ A (λ a → B a)) 
 
   -- productPrim : SqFill (Σ A (λ _ → A))
   -- productPrim = {! sqFill (Σ A (λ _ → A)) !}
@@ -90,9 +91,7 @@ module hello-dep (A : Type) (B : A → Type)
   tm = λ z → false , false
 
   adv : SqFill ty
-  adv = sqFill _
-
-  open import Helper using (refl)
+  adv = sqFill ty
 
   sq = adv {tm} {tm} refl {tm} {tm} refl refl refl
 
@@ -115,33 +114,39 @@ module hello-dep (A : Type) (B : A → Type)
 
   sqSigma = advSigma {tmSigma} refl refl refl refl
 
-  testSigma : sqSigma ≡ refl
-  testSigma _ _ _ = {!a , b!}
+  -- testSigma : sqSigma ≡ refl
+  -- testSigma _ _ _ = {!a , b!}
 
-  ty' = Σ ((a : A) → B a) (λ f → C f)
+  postulate
+    a1 a2 : A
+    p : a1 ≡ a2
+    b1 : B a1
+    b2 : B a2
 
-  tm' : ty'
-  tm' = ({!!} , {!!})
+  tyPathP : Type
+  tyPathP = PathP (λ i → B (p i)) b1 b2
 
-  sqty' = sqFill ty' {tm'} refl refl refl refl
+  postulate tmPathP : tyPathP
 
-  testty' : sqty' ≡ refl
-  testty' _ _ _ = {! ,!}
+  sqPathP = sqFill tyPathP {tmPathP} refl refl refl refl
 
-  tyProduct : Type
-  tyProduct = Σ A (λ _ → A)
+  -- testPathP : sqPathP ≡ refl
+  -- testPathP _ _ _ = {!tmPathP!}
 
-  tmProduct : tyProduct
-  tmProduct = (a , a)
+  -- tyPath = a ≡ a
+  sqPath = sqFill (a ≡ a) {refl {x = a}} refl refl refl refl
+  -- testPath : sqPath ≡ refl
+  -- testPath _ _ _ = {!refl!}
 
-  advProduct : SqFill tyProduct
-  advProduct =  sqFill tyProduct
+  pathPrim : SqFill (a ≡ a)
+  pathPrim = sqFill (a ≡ a)
 
-  sqProduct = advProduct {tmProduct} refl refl refl refl
+  pathManual : SqFill (a ≡ a)
+  pathManual = SqFill.SqFillPathP.SqFillPathP A A a a (λ _ → A) (sqFill A)
+  -- pathManual = SqFill.SqFillPath.SqFillPath A a a (sqFill A)
 
-  testProduct : sqProduct ≡ refl
-  testProduct _ _ _ = {!a , b!}
-
+  checkPath : (λ {lu} {ld} → pathPrim {lu} {ld}) ≡ pathManual
+  checkPath i {lu} {ld} = pathPrim {lu} {ld}
   -- open import Agda.Builtin.Nat
 
   -- NN : Type
@@ -154,3 +159,52 @@ module hello-dep (A : Type) (B : A → Type)
   --   rephrase in our primitives in necessary.
   -- theoretical: is our system canonical? maybe look into how hcomp for inductive types work.
   -- propose some venues for submitting this as a paper
+  --
+
+module sigma-or-product (A : Type) (B : A → Type) where
+  postulate
+    a : A
+    b : B a
+    C : (f : (a : A) → B a) → Type
+
+  ty' = Σ ((a : A) → B a) (λ f → C f)
+
+  -- tm' : ty'
+  -- tm' = ({!!} , {!!})
+
+  -- sqty' = sqFill ty' {tm'} refl refl refl refl
+
+  -- testty' : sqty' ≡ refl
+  -- testty' _ _ _ = {! ,!}
+
+  tyProduct : Type
+  tyProduct = Σ A (λ _ → A)
+
+  tmProduct : tyProduct
+  tmProduct = (a , a)
+
+  advProduct : SqFill tyProduct
+  advProduct = sqFill tyProduct
+
+  sqProduct = advProduct {tmProduct} refl refl refl refl
+
+  -- testProduct : sqProduct ≡ refl
+  -- testProduct _ _ _ = {!a , a!}
+
+-- We implemented Pi, Sigma, Nat, Bool, Unit, PathP.
+module all-in-one-example where
+  open import Agda.Builtin.Nat
+  open import Agda.Builtin.Bool
+  open import Agda.Builtin.Unit
+
+  ty : Type
+  ty = (⊤ → Σ Bool (λ{true → ⊤ ; false → 2 ≡ 2}))
+
+  sqty = sqFill ty {λ _ → false , refl} refl refl refl refl
+  sqty' = sqFill ty {λ _ → true , tt} refl refl refl refl
+
+  adv : sqty ≡ refl
+  adv _ _ _ _ = false , refl
+
+  adv' : sqty' ≡ refl
+  adv' _ _ _ _ = true , tt
