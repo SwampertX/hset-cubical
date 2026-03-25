@@ -14,6 +14,8 @@ open import Agda.Primitive.Cubical public
 open import Agda.Primitive.Cubical public
 open import Agda.Builtin.Cubical.Path public
 open import Agda.Builtin.Sigma
+open import Agda.Builtin.Coproduct
+open import Agda.Builtin.Product
 open import Helper using (refl)
 
 -- open import Cubical.Data.Empty.Base
@@ -50,16 +52,22 @@ module hello-dep (A : Type) (B : A → Type)
   checkPi _ = piPrim
 
   sigmaPrim : SqFill (Σ A (λ a → B a))
-  sigmaPrim =  sqFill (Σ A (λ a → B a)) 
-
-  -- productPrim : SqFill (Σ A (λ _ → A))
-  -- productPrim = {! sqFill (Σ A (λ _ → A)) !}
+  sigmaPrim =  sqFill (Σ A (λ a → B a))
 
   sigmaManual : SqFill (Σ A (λ a → B a))
   sigmaManual = SqFill.SqFillSigma.SqFillSigmaAB A (sqFill A) B λ a → sqFill (B a)
 
   checkSigma : (λ {lu} {ld} → sigmaPrim {lu} {ld}) ≡ sigmaManual
   checkSigma _ = sigmaPrim
+
+  productPrim : SqFill (A × A)
+  productPrim =  sqFill (A × A)
+
+  productManual : SqFill (A × A)
+  productManual = SqFill.SqFillProduct.SqFillProductAB A (sqFill A) A (sqFill A)
+
+  checkProduct : (λ {lu} {ld} → productPrim {lu} {ld}) ≡ productManual
+  checkProduct i = productPrim
 
   open import Agda.Builtin.Unit
 
@@ -96,7 +104,7 @@ module hello-dep (A : Type) (B : A → Type)
   sq = adv {tm} {tm} refl {tm} {tm} refl refl refl
 
   test : sq ≡ refl
-  test k i j =  λ z → false , false 
+  test k i j =  λ z → false , false
 
   tySigma : Type
   tySigma = Σ A (λ a → B a)
@@ -110,7 +118,7 @@ module hello-dep (A : Type) (B : A → Type)
   tmSigma = (a , b)
 
   advSigma : SqFill tySigma
-  advSigma =  sqFill tySigma 
+  advSigma =  sqFill tySigma
 
   sqSigma = advSigma {tmSigma} refl refl refl refl
 
@@ -130,6 +138,14 @@ module hello-dep (A : Type) (B : A → Type)
 
   sqPathP = sqFill tyPathP {tmPathP} refl refl refl refl
 
+  pathPPrim : SqFill tyPathP
+  pathPPrim = sqFill tyPathP
+
+  pathPManual : SqFill tyPathP
+  pathPManual = SqFill.SqFillPathP.SqFillPathP (B a1) (B a2) b1 b2 (λ i → B (p i)) (sqFill (B a1))
+
+  checkPathP : (λ {lu} {ld} → pathPPrim {lu} {ld}) ≡ pathPManual
+  checkPathP i {lu} {ld} = pathPPrim {lu} {ld}
   -- testPathP : sqPathP ≡ refl
   -- testPathP _ _ _ = {!tmPathP!}
 
@@ -142,11 +158,21 @@ module hello-dep (A : Type) (B : A → Type)
   pathPrim = sqFill (a ≡ a)
 
   pathManual : SqFill (a ≡ a)
-  pathManual = SqFill.SqFillPathP.SqFillPathP A A a a (λ _ → A) (sqFill A)
-  -- pathManual = SqFill.SqFillPath.SqFillPath A a a (sqFill A)
+  -- pathManual = SqFill.SqFillPathP.SqFillPathP A A a a (λ _ → A) (sqFill A)
+  pathManual = SqFill.SqFillPath.SqFillPath A a a (sqFill A)
 
   checkPath : (λ {lu} {ld} → pathPrim {lu} {ld}) ≡ pathManual
   checkPath i {lu} {ld} = pathPrim {lu} {ld}
+
+  coproductPrim : SqFill (A ⊎ A)
+  coproductPrim = sqFill (A ⊎ A)
+
+  coproductManual : SqFill (A ⊎ A)
+  coproductManual = SqFill.SqFillCoproduct.SqFillCoproduct A (sqFill A) A (sqFill A)
+
+  checkCoproduct : (λ {lu} {ld} → coproductPrim {lu} {ld}) ≡ coproductManual
+  checkCoproduct i {lu} {ld} = coproductPrim {lu} {ld}
+
   -- open import Agda.Builtin.Nat
 
   -- NN : Type

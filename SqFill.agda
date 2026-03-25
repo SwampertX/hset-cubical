@@ -14,7 +14,8 @@ open import Agda.Primitive renaming (Set   to Type)
 open import Agda.Builtin.Sigma
 open import Agda.Builtin.Cubical.Sub
   renaming (primSubOut to outS)
-
+open import Agda.Builtin.Coproduct renaming (_⊎_ to _+_)
+open import Agda.Builtin.Product
 
 module SqFill where
   SqFill : (A : Type) → Type
@@ -147,7 +148,7 @@ module SqFill where
 
   module SqFillProduct (A : Type) (SqFillA : SqFill A) (B : Type) (SqFillB : SqFill B) where
 
-    SqFillProductAB : SqFill (Σ A (λ _ → B))
+    SqFillProductAB : SqFill (A × B)
     SqFillProductAB {lu} {ld} l {ru} {rd} r u d i j .fst = SqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j
     SqFillProductAB {lu} {ld} l {ru} {rd} r u d i j .snd = SqFillB (cong snd l) (cong snd r) (cong snd u) (cong snd d) i j
 
@@ -160,11 +161,7 @@ module SqFill where
 
   open import Agda.Builtin.Unit
 
-
-  module SqFillCpdt (A A' : Type) (SqFillA : SqFill A) (SqFillA' : SqFill A') where
-    data _+_ (A B : Type) : Type where
-        inl : A → A + B
-        inr : B → A + B
+  module SqFillCoproduct (A : Type) (SqFillA : SqFill A) (A' : Type) (SqFillA' : SqFill A') where
 
     module EncodeDecode {A B : Type} where
         inl≠inr : (x : A) (y : B) → (inl x ≡ inr y) → ⊥
@@ -203,20 +200,22 @@ module SqFill where
             k (i = i1) → decodeEncode r k j
             k (j = i0) → decodeEncode u k i
             k (j = i1) → decodeEncode d k i)
-        (inl {A} {A'} (SqFillA (encode l) (encode r) (encode u) (encode d) i j)))
+        (inl {A = A} {B = A'} (SqFillA (encode l) (encode r) (encode u) (encode d) i j)))
     SqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j =
         (hcomp (λ where
             k (i = i0) → decodeEncode l k j
             k (i = i1) → decodeEncode r k j
             k (j = i0) → decodeEncode u k i
             k (j = i1) → decodeEncode d k i)
-        (inr {A} {A'} (SqFillA' (encode l) (encode r) (encode u) (encode d) i j)))
+        (inr {A = A} {B = A'} (SqFillA' (encode l) (encode r) (encode u) (encode d) i j)))
     SqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr x y l)
     SqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr y x (sym l))
     SqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr x y u)
     SqFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥-elim (inl≠inr y x (sym u))
     SqFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr x y d)
     SqFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr y x (sym d))
+
+  {-# BUILTIN SQFILLCOPRODUCT SqFillCoproduct.SqFillCoproduct #-}
 
   module SqFillPath (A : Type) (a b : A) (SqFillA : SqFill A)  where
     SqFillPath : SqFill (a ≡ b)
@@ -419,75 +418,64 @@ module SqFill where
 
   {-# BUILTIN SQFILLNAT SqFillNat.SqFillNat #-}
 
-  _×_ : Type → Type → Type
-  A × B = Σ A (λ _ → B)
-  infixr 3 _×_
+  -- module SqFillList (A : Type) (sqFillA : SqFill A) where
+  --   open import Agda.Builtin.List
 
-  -- This is almost trivial; is a non-dependent instatiation of SqFillSigma equal to this?
-  module SqFillPair (A : Type) (sqFillA : SqFill A) (B : Type) (sqFillB : SqFill B) where
-    SqFillPair : SqFill (A × B)
-    SqFillPair l r u d i j .fst = sqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j
-    SqFillPair l r u d i j .snd = sqFillB (cong snd l) (cong snd r) (cong snd u) (cong snd d) i j
+  --   nil≠cons : {x : A} {xs : List A} → [] ≡ x ∷ xs → ⊥
+  --   nil≠cons p = transport (cong isNil p) tt
+  --       where
+  --       isNil : List A → Type
+  --       isNil [] = ⊤
+  --       isNil (_ ∷ _) = ⊥
 
+  --   ListCover : (xs ys : List A) → Type
+  --   ListCover [] [] = ⊤
+  --   ListCover (x ∷ xs) (y ∷ ys) = x ≡ y × ListCover xs ys
+  --   ListCover _ _ = ⊥
 
-  module SqFillList (A : Type) (sqFillA : SqFill A) where
-    open import Agda.Builtin.List
+  --   reflCode : (xs : List A) → ListCover xs xs
+  --   reflCode [] = tt
+  --   reflCode (x ∷ xs) = refl , reflCode xs
 
-    nil≠cons : {x : A} {xs : List A} → [] ≡ x ∷ xs → ⊥
-    nil≠cons p = transport (cong isNil p) tt
-        where
-        isNil : List A → Type
-        isNil [] = ⊤
-        isNil (_ ∷ _) = ⊥
+  --   encode : (xs ys : List A) → xs ≡ ys → ListCover xs ys
+  --   encode xs ys = J (λ ys _ → ListCover xs ys) (reflCode xs)
 
-    ListCover : (xs ys : List A) → Type
-    ListCover [] [] = ⊤
-    ListCover (x ∷ xs) (y ∷ ys) = x ≡ y × ListCover xs ys
-    ListCover _ _ = ⊥
+  --   encodeRefl : (xs : List A) → encode xs xs refl ≡ reflCode xs
+  --   encodeRefl xs = JRefl (λ ys _ → ListCover xs ys) (reflCode xs)
 
-    reflCode : (xs : List A) → ListCover xs xs
-    reflCode [] = tt
-    reflCode (x ∷ xs) = refl , reflCode xs
+  --   decode : (xs ys : List A) → ListCover xs ys → xs ≡ ys
+  --   decode [] [] tt = refl
+  --   decode (x ∷ xs) (y ∷ ys) (p , c) = cong₂ _∷_ p (decode xs ys c)
 
-    encode : (xs ys : List A) → xs ≡ ys → ListCover xs ys
-    encode xs ys = J (λ ys _ → ListCover xs ys) (reflCode xs)
+  --   decodeRefl : (xs : List A) → decode xs xs (reflCode xs) ≡ refl
+  --   decodeRefl [] = refl
+  --   decodeRefl (x ∷ xs) = cong (cong₂ _∷_ refl) (decodeRefl xs)
 
-    encodeRefl : (xs : List A) → encode xs xs refl ≡ reflCode xs
-    encodeRefl xs = JRefl (λ ys _ → ListCover xs ys) (reflCode xs)
+  --   decodeEncode : (xs ys : List A) (p : xs ≡ ys) → decode xs ys (encode xs ys p) ≡ p
+  --   decodeEncode xs _ = J (λ ys p → decode xs ys (encode xs ys p) ≡ p) (transport (λ i → decode xs xs (encodeRefl xs (~ i)) ≡ refl) (decodeRefl xs))
 
-    decode : (xs ys : List A) → ListCover xs ys → xs ≡ ys
-    decode [] [] tt = refl
-    decode (x ∷ xs) (y ∷ ys) (p , c) = cong₂ _∷_ p (decode xs ys c)
-
-    decodeRefl : (xs : List A) → decode xs xs (reflCode xs) ≡ refl
-    decodeRefl [] = refl
-    decodeRefl (x ∷ xs) = cong (cong₂ _∷_ refl) (decodeRefl xs)
-
-    decodeEncode : (xs ys : List A) (p : xs ≡ ys) → decode xs ys (encode xs ys p) ≡ p
-    decodeEncode xs _ = J (λ ys p → decode xs ys (encode xs ys p) ≡ p) (transport (λ i → decode xs xs (encodeRefl xs (~ i)) ≡ refl) (decodeRefl xs))
-
-    SqFillList : SqFill (List A)
-    SqFillList {[]} {[]} l {[]} {[]} r u d i j =
-      (hcomp (λ where k (i = i0) → decodeEncode _ _ l k j
-                      k (i = i1) → decodeEncode _ _ r k j
-                      k (j = i0) → decodeEncode _ _ u k i
-                      k (j = i1) → decodeEncode _ _ d k i) [])
-    SqFillList {lu ∷ lus} {ld ∷ lds} l {ru ∷ rus} {rd ∷ rds} r u d i j =
-      (hcomp (λ where k (i = i0) → decodeEncode (lu ∷ lus) (ld ∷ lds) l k j
-                      k (i = i1) → decodeEncode (ru ∷ rus) (rd ∷ rds) r k j
-                      k (j = i0) → decodeEncode (lu ∷ lus) (ru ∷ rus) u k i
-                      k (j = i1) → decodeEncode (ld ∷ lds) (rd ∷ rds) d k i)
-        (sqFillA (encode _ _ l .fst) (encode _ _ r .fst) (encode _ _ u .fst) (encode _ _ d .fst) i j
-          ∷ SqFillList {lus} (decode _ _ (encode _ _ l .snd))
-                               (decode _ _ (encode _ _ r .snd))
-                               (decode _ _ (encode _ _ u .snd))
-                               (decode _ _ (encode _ _ d .snd)) i j))
-    SqFillList {[]} {_ ∷ _} l {_} {_} _ _ _ = ⊥-elim (nil≠cons l)
-    SqFillList {_ ∷ _} {[]} l {_} {_} _ _ _ = ⊥-elim (nil≠cons (sym l))
-    SqFillList {[]} {_} _ {_ ∷ _} {_} _ u _ = ⊥-elim (nil≠cons u)
-    SqFillList {_ ∷ _} {_} _ {[]} {_} _ u _ = ⊥-elim (nil≠cons (sym u))
-    SqFillList {_} {[]} _ {_} {_ ∷ _} _ _ d = ⊥-elim (nil≠cons d)
-    SqFillList {_} {_ ∷ _} _ {_} {[]} _ _ d = ⊥-elim (nil≠cons (sym d))
+  --   SqFillList : SqFill (List A)
+  --   SqFillList {[]} {[]} l {[]} {[]} r u d i j =
+  --     (hcomp (λ where k (i = i0) → decodeEncode _ _ l k j
+  --                     k (i = i1) → decodeEncode _ _ r k j
+  --                     k (j = i0) → decodeEncode _ _ u k i
+  --                     k (j = i1) → decodeEncode _ _ d k i) [])
+  --   SqFillList {lu ∷ lus} {ld ∷ lds} l {ru ∷ rus} {rd ∷ rds} r u d i j =
+  --     (hcomp (λ where k (i = i0) → decodeEncode (lu ∷ lus) (ld ∷ lds) l k j
+  --                     k (i = i1) → decodeEncode (ru ∷ rus) (rd ∷ rds) r k j
+  --                     k (j = i0) → decodeEncode (lu ∷ lus) (ru ∷ rus) u k i
+  --                     k (j = i1) → decodeEncode (ld ∷ lds) (rd ∷ rds) d k i)
+  --       (sqFillA (encode _ _ l .fst) (encode _ _ r .fst) (encode _ _ u .fst) (encode _ _ d .fst) i j
+  --         ∷ SqFillList {lus} (decode _ _ (encode _ _ l .snd))
+  --                              (decode _ _ (encode _ _ r .snd))
+  --                              (decode _ _ (encode _ _ u .snd))
+  --                              (decode _ _ (encode _ _ d .snd)) i j))
+  --   SqFillList {[]} {_ ∷ _} l {_} {_} _ _ _ = ⊥-elim (nil≠cons l)
+  --   SqFillList {_ ∷ _} {[]} l {_} {_} _ _ _ = ⊥-elim (nil≠cons (sym l))
+  --   SqFillList {[]} {_} _ {_ ∷ _} {_} _ u _ = ⊥-elim (nil≠cons u)
+  --   SqFillList {_ ∷ _} {_} _ {[]} {_} _ u _ = ⊥-elim (nil≠cons (sym u))
+  --   SqFillList {_} {[]} _ {_} {_ ∷ _} _ _ d = ⊥-elim (nil≠cons d)
+  --   SqFillList {_} {_ ∷ _} _ {_} {[]} _ _ d = ⊥-elim (nil≠cons (sym d))
 
   -- {-# BUILTIN SQFILLLIST SqFillList.SqFillList #-}
 
