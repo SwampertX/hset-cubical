@@ -1,5 +1,5 @@
 {-# OPTIONS --cubical=uip #-}
-{-# OPTIONS -v cubical.prim.uip:70 #-}
+-- {-# OPTIONS -v cubical.prim.uip:70 #-}  -- uncomment for debugging
 
 open import Agda.Primitive using () renaming (Set to Type)
 open import Agda.Primitive.Cubical public
@@ -17,6 +17,8 @@ open import Agda.Builtin.Sigma
 open import Agda.Builtin.Coproduct
 open import Agda.Builtin.Product
 open import Helper using (refl)
+open import Agda.Builtin.List
+open import Agda.Builtin.Maybe
 
 -- open import Cubical.Data.Empty.Base
 
@@ -173,6 +175,24 @@ module hello-dep (A : Type) (B : A → Type)
   checkCoproduct : (λ {lu} {ld} → coproductPrim {lu} {ld}) ≡ coproductManual
   checkCoproduct i {lu} {ld} = coproductPrim {lu} {ld}
 
+
+  listPrim : SqFill (List A)
+  listPrim = sqFill (List A)
+
+  listManual : SqFill (List A)
+  listManual = SqFill.SqFillList.SqFillList A (sqFill A)
+
+  checkList : (λ {lu} {ld} → listPrim {lu} {ld}) ≡ listManual
+  checkList i {lu} {ld} = listPrim
+
+  -- maybePrim : SqFill (Maybe A)
+  -- maybePrim = sqFill (Maybe A)
+
+  -- maybeManual : SqFill (Maybe A)
+  -- maybeManual = SqFill.SqFillMaybe.SqFillMaybe A (sqFill A)
+
+  -- checkMaybe : (λ {lu} {ld} → maybePrim {lu} {ld}) ≡ maybeManual
+  -- checkMaybe i {lu} {ld} = {!!}
   -- open import Agda.Builtin.Nat
 
   -- NN : Type
