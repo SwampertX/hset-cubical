@@ -1,5 +1,4 @@
 {-# OPTIONS --cubical=uip #-}
--- {-# OPTIONS --cubical=no-glue #-}
 
 open import Agda.Primitive using () renaming (Set to Type)
 open import Agda.Primitive.Cubical public
@@ -16,131 +15,183 @@ open import Agda.Builtin.Sigma
 open import Agda.Builtin.Bool
 open import Agda.Builtin.Nat renaming (Nat to ℕ)
 open import Agda.Builtin.Unit
+open import Agda.Builtin.List
+open import Agda.Builtin.Maybe
+open import Agda.Builtin.Product
+open import Agda.Builtin.Coproduct
 open import SqFill
 open import Helper using (refl)
 
 primitive prim^sqFill : (A : Type) → SqFill A
--- postulate prim^sqFill : (A : Type) → SqFill A
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Coproducts, encoded via Σ + Bool
+-- Coproducts via Σ + Bool  (prim^sqFill handles these via the Sigma/Bool rules)
 -- ─────────────────────────────────────────────────────────────────────────────
 
-_⊎_ : Type → Type → Type
-A ⊎ B = Σ Bool λ {true → A ; false → B}
+-- _⊎_ : Type → Type → Type
+-- A ⊎ B = Σ Bool λ {true → A ; false → B}
 
-inl : {A B : Type} → A → A ⊎ B
-inl a = true , a
+-- inl : {A B : Type} → A → A ⊎ B
+-- inl a = true , a
 
-inr : {A B : Type} → B → A ⊎ B
-inr b = false , b
+-- inr : {A B : Type} → B → A ⊎ B
+-- inr b = false , b
 
 ⊎-elim : {A B C : Type} → (A → C) → (B → C) → A ⊎ B → C
-⊎-elim f g (true  , a) = f a
-⊎-elim f g (false , b) = g b
+⊎-elim f g (inl a) = f a
+⊎-elim f g (inr b) = g b
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- A tiny SSA / let-calculus
+-- A register-transfer language (RTL)
 --
--- Inspired by the well-known correspondence:
---   "SSA is Functional Programming" (Appel, 1998)
+-- Inspired by "SSA is Functional Programming" (Appel 1998).
 --
--- A LetBlock is a sequence of 3 instructions followed by a return value.
--- Each instruction is a binary operation applied to two Values.
--- A Value is either a literal natural number, or a variable (de Bruijn index).
--- A BinOp is one of: Add | Sub | Mul | Div  (encoded as Bool × Bool)
+-- Values are:
+--   Lit n  — a known compile-time literal
+--   Var i  — de Bruijn reference to the result of instruction i
+--   Unk    — statically unknown (function argument, external input, etc.)
+--
+-- The Unk constructor is modelled by Maybe: nothing = unknown.
+-- This is new relative to the original LetBlock demo, which had no unknowns.
+--
+-- A Program is a variable-length List of instructions, more realistic than
+-- a fixed-3-instruction block.
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- Values: literals or variable references
-Value : Type
-Value = ℕ ⊎ ℕ    -- inl n = Lit n | inr i = Var i
-
-pattern Lit n = true  , n
-pattern Var i = false , i
-
--- Binary operations: 2 bits = 4 ops
 BinOp : Type
 BinOp = Bool × Bool
--- (true,  true)  = Add
--- (true,  false) = Sub
--- (false, true)  = Mul
--- (false, false) = Div
 
 pattern Add = true  , true
 pattern Sub = true  , false
 pattern Mul = false , true
 pattern Div = false , false
 
--- An instruction: op applied to two values
+Value : Type
+Value = Maybe (ℕ ⊎ ℕ)
+
+pattern Lit n = just (inl n)
+pattern Var i = just (inr i)
+pattern Unk   = nothing
+
 Instruction : Type
 Instruction = BinOp × Value × Value
 
--- A basic block: 3 instructions + a return value
--- let x₀ = instr₀
--- let x₁ = instr₁
--- let x₂ = instr₂
--- in  retval
-LetBlock : Type
-LetBlock = Instruction × Instruction × Instruction × Value
+Program : Type
+Program = List Instruction × Value
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Example blocks
+-- Example programs
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- let x₀ = 1 + 2
--- let x₁ = x₀ * 3
--- let x₂ = x₁ - x₀
--- in  x₂
-example-block : LetBlock
-example-block =
-  (Add , Lit 1 , Lit 2) ,
-  (Mul , Var 0 , Lit 3) ,
-  (Sub , Var 1 , Var 0) ,
-  Var 2
+-- r₀ := 1 + 2   (= 3)
+-- r₁ := r₀ * 3  (= 9)
+-- r₂ := r₁ - r₀ (= 6)
+-- return r₂
+prog-arith : Program
+prog-arith =
+  (Add , Lit 1 , Lit 2) ∷
+  (Mul , Var 0 , Lit 3) ∷
+  (Sub , Var 1 , Var 0) ∷
+  [] , Var 2
+
+-- r₀ := ? + 1    (? = statically unknown input, e.g. a function argument)
+-- r₁ := r₀ * r₀
+-- return r₁       (computes (input+1)²)
+prog-square-succ : Program
+prog-square-succ =
+  (Add , Unk  , Lit 1) ∷
+  (Mul , Var 0 , Var 0) ∷
+  [] , Var 1
+
+-- trivial: just return a literal
+prog-const : Program
+prog-const = [] , Lit 42
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- UIP for LetBlock — computes in Cubical-UIP, stuck in mainline
+-- UIP for Program — computes in Cubical-UIP, stuck in mainline Agda
+--
+-- prim^sqFill traverses the full type tower:
+--   Program     = List Instruction × Value   ← List is new
+--   Instruction = BinOp × Value × Value
+--   Value       = Maybe (ℕ ⊎ ℕ)              ← Maybe is new
+--   BinOp       = Bool × Bool
+--   ℕ ⊎ ℕ       = Σ Bool (const ℕ)
+-- All constructors are supported → reduces to refl automatically.
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- Any two proofs that two basic blocks are equal are themselves equal.
--- In mainline Agda: this term never reduces.
--- In Cubical-UIP:  prim^sqFill inspects LetBlock, fires through
---   Σ → Σ → Σ (nested products)
---       → BinOp = Bool × Bool
---       → Value = Bool ⊎ ℕ = Σ Bool (...)
---       → ℕ
--- ... and reduces to refl automatically.
+uip-prog : {p q : Program} (α β : p ≡ q) → α ≡ β
+uip-prog α β = prim^sqFill Program α β refl refl
 
-uip-block : {b₁ b₂ : LetBlock} (p q : b₁ ≡ b₂) → p ≡ q
-uip-block {b₁} {b₂} p q = prim^sqFill LetBlock p q refl refl
+-- These typecheck by refl: uip collapses to the identity path
+test-arith : uip-prog (λ _ → prog-arith) (λ _ → prog-arith) ≡ (λ _ _ → prog-arith)
+test-arith = refl
 
--- The killer test: this typechecks by refl in Cubical-UIP
--- Try this in mainline Agda — it will be stuck.
-test-computes : uip-block (λ _ → example-block) (λ _ → example-block)
-              ≡ (λ _ _ → example-block)
-test-computes = refl
+test-square-succ : uip-prog (λ _ → prog-square-succ) (λ _ → prog-square-succ)
+                 ≡ (λ _ _ → prog-square-succ)
+test-square-succ = refl
+
+test-const : uip-prog (λ _ → prog-const) (λ _ → prog-const)
+           ≡ (λ _ _ → prog-const)
+test-const = refl
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- A certified compiler pass:
--- constant folding on a single instruction
+-- Constant folding — a certified compiler pass
+--
+-- fold-instr : if both operands are known literals, returns just (Lit result).
+--              otherwise returns nothing (cannot fold).
+-- fold-prog : runs fold-instr over the instruction list, producing a
+--             "known-value map" — a List (Maybe Value) — one entry per step.
+--
+-- The output type List (Maybe Value) nests both new features and still
+-- admits UIP.
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- Fold an instruction if both operands are literals
-fold-instr : Instruction → Value
-fold-instr (Add , Lit m , Lit n) = Lit (m + n)
-fold-instr (Mul , Lit m , Lit n) = Lit (m * n)
-fold-instr (_   , v     , _    ) = v   -- no fold
+eval : BinOp → ℕ → ℕ → ℕ
+eval Add m n = m + n
+eval Mul m n = m * n
+eval Sub m n = m - n
+eval Div m _ = m       -- division uninterpreted (no builtin div)
 
--- Two different folding strategies on the same block
--- give results whose equality proofs compute away:
-fold-block : LetBlock → LetBlock
-fold-block (i₀ , i₁ , i₂ , ret) =
-  (Add , fold-instr i₀ , fold-instr i₁) ,
-  (Mul , fold-instr i₁ , fold-instr i₂) ,
-  i₂ ,
-  fold-instr i₂
+fold-instr : Instruction → Maybe Value
+fold-instr (op , Lit m , Lit n) = just (Lit (eval op m n))
+fold-instr _                    = nothing
 
--- Any proof that two fold results are equal is unique — computes:
-uip-fold : {b₁ b₂ : LetBlock}
-           (p q : fold-block b₁ ≡ fold-block b₂) → p ≡ q
-uip-fold {b₁} {b₂} p q = prim^sqFill LetBlock p q refl refl
+fold-prog : Program → List (Maybe Value)
+fold-prog ([]       , _) = []
+fold-prog (i ∷ rest , r) = fold-instr i ∷ fold-prog (rest , r)
+
+uip-fold : {xs ys : List (Maybe Value)} (α β : xs ≡ ys) → α ≡ β
+uip-fold α β = prim^sqFill (List (Maybe Value)) α β refl refl
+
+-- fold-prog prog-arith:
+--   (Add, Lit 1, Lit 2) → just (Lit 3)
+--   (Mul, Var 0, Lit 3) → nothing      (Var 0 is not a literal)
+--   (Sub, Var 1, Var 0) → nothing
+test-fold-arith : fold-prog prog-arith ≡ just (Lit 3) ∷ nothing ∷ nothing ∷ []
+test-fold-arith = refl
+
+test-fold-uip : uip-fold (λ _ → fold-prog prog-arith) (λ _ → fold-prog prog-arith)
+              ≡ (λ _ _ → fold-prog prog-arith)
+test-fold-uip = refl
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Live variable analysis
+--
+-- Which register indices are referenced by the return value?
+-- Returns a List ℕ — another natural analysis output type.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+live-ret : Value → List ℕ
+live-ret (Var i) = i ∷ []
+live-ret _       = []
+
+uip-live : {xs ys : List ℕ} (α β : xs ≡ ys) → α ≡ β
+uip-live α β = prim^sqFill (List ℕ) α β refl refl
+
+-- prog-arith returns Var 2, so only register 2 is live at exit
+test-live : live-ret (Var 2) ≡ 2 ∷ []
+test-live = refl
+
+test-live-uip : uip-live (λ _ → live-ret (Var 2)) (λ _ → live-ret (Var 2))
+              ≡ (λ _ _ → live-ret (Var 2))
+test-live-uip = refl
