@@ -1,4 +1,4 @@
-{-# OPTIONS --cubical=no-glue --guardedness #-}
+{-# OPTIONS --cubical=no-glue --guardedness --type-in-type #-}
 
 open import Agda.Builtin.Cubical.Path
 open import Agda.Primitive.Cubical
@@ -67,6 +67,9 @@ module W where
     getShape : (w : W S P) → S
     getShape (sup-W s x) = s
 
+    getArity : (w : W S P) → Type
+    getArity (sup-W s x) = P s
+
     getSubTree : (w : W S P) → P (getShape w) → W S P
     getSubTree (sup-W s x) = x
 
@@ -74,14 +77,14 @@ module W where
     ShapeCover w w' = getShape w ≡ getShape w'
 
     ArityCover : (w w' : W S P) → ShapeCover w w' → Type
-    ArityCover w w' ps = P (getShape w')
+    ArityCover (sup-W s x) (sup-W s' x') ps = (P s) ≡ (P s')
 
     CoverW : (w w' : W S P) → Type
-    -- CoverW (sup-W s x) (sup-W s' x') = Σ (s ≡ s') (λ p → PathP (λ i → (P (p i) → W S P)) x x')
-    CoverW w w' = W (ShapeCover w w') (ArityCover w w')
+    CoverW (sup-W s x) (sup-W s' x') = W (s ≡ s') (λ p → PathP (λ i → (P (p i) → W S P)) x x')
+    -- CoverW w w' = W (ShapeCover w w') (ArityCover w w')
 
     reflCodeW : {x : W S P} → CoverW x x
-    reflCodeW {sup-W s x} = {!!}
+    reflCodeW {sup-W s x} = sup-W refl (λ con → {! reflCodeW {x (con i0)}!})
 
     -- encodeW : {x y : W S P} → x ≡ y → CoverW x y
     -- encodeW {x} p = transport (λ i → CoverW x (p i)) reflCodeW
