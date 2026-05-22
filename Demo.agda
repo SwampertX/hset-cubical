@@ -174,6 +174,8 @@ test-fold-uip : uip-fold (λ _ → fold-prog prog-arith) (λ _ → fold-prog pro
               ≡ (λ _ _ → fold-prog prog-arith)
 test-fold-uip = refl
 
+_ = {!uip-fold (λ _ → fold-prog prog-arith) (λ _ → fold-prog prog-arith)!}
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Live variable analysis
 --

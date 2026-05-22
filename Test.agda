@@ -254,3 +254,6 @@ module all-in-one-example where
 
   adv' : sqty' ≡ refl
   adv' _ _ _ _ = true , tt
+
+  sq : (x : Nat) (p q : x ≡ x) → sqFill Nat (λ i → x) (λ i → x) refl refl ≡ refl
+  sq x p q = {!refl!}
