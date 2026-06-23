@@ -257,3 +257,31 @@ module all-in-one-example where
 
   sq : (x : Nat) (p q : x ≡ x) → sqFill Nat (λ i → x) (λ i → x) refl refl ≡ refl
   sq x p q = {!refl!}
+
+
+-- record R : Type where
+--   field
+
+-- sqFillR : SqFill R
+-- sqFillR {record {}} {record {}} l r u d = {!!}
+--
+module _ where
+  private postulate
+    A : Type
+    w x y z : A
+    p : w ≡ x
+    q : x ≡ y
+    r : y ≡ z
+
+  s : w ≡ z
+  s i = hcomp {A = A} {φ = i ∨ (~ i)} (λ{k (i = i0) → p (~ k); k (i = i1) → r k}) (q i)
+
+module inductiveRecord where
+  record R : Type where
+    inductive
+    constructor rcons
+    field
+      r : ⊥ → ⊥
+
+  myR : R → R
+  myR (rcons r) = {!!}
