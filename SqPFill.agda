@@ -49,7 +49,7 @@ module SqPFill where
     (a₋₀ : PathP (λ i → A i i0) a₀₀ a₁₀) (a₋₁ : PathP (λ i → A i i1) a₀₁ a₁₁)
     → PathP (λ i → PathP (λ j → A i j) (a₋₀ i) (a₋₁ i)) a₀₋ a₁₋
 
-  {-# BUILTIN SQPFILL SqPFill #-}
+  -- {-# BUILTIN SQPFILL SqPFill #-}
 
   if_then_else_end : I → I → I → I
   if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
@@ -109,7 +109,7 @@ module SqPFill where
       SqFillPiABWrong : Type
 
   -- {-# BUILTIN SQFILLPI SqPFillPi.SqFillPiABWrong #-}
-  {-# BUILTIN SQPFILLPI SqPFillPi.SqPFillPiAB #-}
+  -- {-# BUILTIN SQPFILLPI SqPFillPi.SqPFillPiAB #-}
 
   module SqPFillSigma
     (A : I → I → Type) (SqPFillA : SqPFill A)

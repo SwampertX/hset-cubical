@@ -144,6 +144,16 @@ module SqFill where
                             k (j' = i0) → LemmaU (~ k) i'
                             k (j' = i1) → LemmaD (~ k) i') (outS (sqb' i' j')))
 
+    SqPFill : (A : I → I → Type) → Type
+    SqPFill A =
+        {a₀₀ : A i0 i0} {a₀₁ : A i0 i1} (a₀₋ : PathP (λ j → A i0 j) a₀₀ a₀₁)
+        {a₁₀ : A i1 i0} {a₁₁ : A i1 i1} (a₁₋ : PathP (λ j → A i1 j) a₁₀ a₁₁)
+        (a₋₀ : PathP (λ i → A i i0) a₀₀ a₁₀) (a₋₁ : PathP (λ i → A i i1) a₀₁ a₁₁)
+        → PathP (λ i → PathP (λ j → A i j) (a₋₀ i) (a₋₁ i)) a₀₋ a₁₋
+
+    -- fromSqFill : (A : I → I → Type) → ((i j : I) → SqFill (A i j)) → SqPFill A
+    -- fromSqFill A sqFill l r u d i j = {!sqFill i j l r u d!}
+
   {-# BUILTIN SQFILLSIGMA SqFillSigma.SqFillSigmaAB #-}
 
   module SqFillProduct (A : Type) (SqFillA : SqFill A) (B : Type) (SqFillB : SqFill B) where
