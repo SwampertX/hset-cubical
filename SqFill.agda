@@ -18,7 +18,7 @@ open import Agda.Builtin.Coproduct renaming (_⊎_ to _+_)
 open import Agda.Builtin.Product
 
 module SqFill where
-  SqFill : (A : Type) → Type
+  SqFill : ∀{ℓ} → Type ℓ → Type ℓ
   SqFill A =
     {a₀₀ : A} {a₀₁ : A} (a₀₋ : a₀₀ ≡ a₀₁)
     {a₁₀ : A} {a₁₁ : A} (a₁₋ : a₁₀ ≡ a₁₁)
@@ -29,7 +29,7 @@ module SqFill where
 
   open import Helper
 
-  module SqFillPi (A : Type) (B : A → Type) (SqFillB : (x : A) → SqFill (B x)) where
+  module SqFillPi {ℓ ℓ'} (A : Type ℓ) (B : A → Type ℓ') (SqFillB : (x : A) → SqFill (B x)) where
 
     SqFillPiAB : SqFill ((a : A) → B a)
     SqFillPiAB {lu} {ld} l {ru} {rd} r u d i j a = SqFillB a {lu a} {ld a} (λ i → l i a) {ru a} {rd a} (λ i → r i a) (λ i → u i a) (λ i → d i a) i j
@@ -41,7 +41,7 @@ module SqFill where
 
   {-# INLINE if_then_else_end #-}
 
-  module SqFillSigma (A : Type) (SqFillA : SqFill A) (B : A → Type) (SqFillB : (x : A) → SqFill (B x)) where
+  module SqFillSigma {ℓ ℓ'} (A : Type ℓ) (SqFillA : SqFill A) (B : A → Type ℓ') (SqFillB : (x : A) → SqFill (B x)) where
 
     SqFillSigmaAB : SqFill (Σ A (λ a → B a))
     SqFillSigmaAB {lu} {ld} l {ru} {rd} r u d i j .fst = SqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j
@@ -144,19 +144,19 @@ module SqFill where
                             k (j' = i0) → LemmaU (~ k) i'
                             k (j' = i1) → LemmaD (~ k) i') (outS (sqb' i' j')))
 
-    SqPFill : (A : I → I → Type) → Type
+    SqPFill : ∀{ℓ} (A : I → I → Type ℓ) → Type ℓ
     SqPFill A =
         {a₀₀ : A i0 i0} {a₀₁ : A i0 i1} (a₀₋ : PathP (λ j → A i0 j) a₀₀ a₀₁)
         {a₁₀ : A i1 i0} {a₁₁ : A i1 i1} (a₁₋ : PathP (λ j → A i1 j) a₁₀ a₁₁)
         (a₋₀ : PathP (λ i → A i i0) a₀₀ a₁₀) (a₋₁ : PathP (λ i → A i i1) a₀₁ a₁₁)
         → PathP (λ i → PathP (λ j → A i j) (a₋₀ i) (a₋₁ i)) a₀₋ a₁₋
 
-    -- fromSqFill : (A : I → I → Type) → ((i j : I) → SqFill (A i j)) → SqPFill A
+    -- fromSqFill : ∀{ℓ} (A : I → I → Type ℓ) → ((i j : I) → SqFill (A i j)) → SqPFill A
     -- fromSqFill A sqFill l r u d i j = {!sqFill i j l r u d!}
 
   {-# BUILTIN SQFILLSIGMA SqFillSigma.SqFillSigmaAB #-}
 
-  module SqFillProduct (A : Type) (SqFillA : SqFill A) (B : Type) (SqFillB : SqFill B) where
+  module SqFillProduct {ℓ ℓ'} (A : Type ℓ) (SqFillA : SqFill A) (B : Type ℓ') (SqFillB : SqFill B) where
 
     SqFillProductAB : SqFill (A × B)
     SqFillProductAB {lu} {ld} l {ru} {rd} r u d i j .fst = SqFillA (cong fst l) (cong fst r) (cong fst u) (cong fst d) i j
@@ -166,42 +166,57 @@ module SqFill where
 
   data ⊥ : Type where
 
-  ⊥-elim : {A : Type} (x : ⊥) → A
+  ⊥-elim : ∀{ℓ} {A : Type ℓ} (x : ⊥) → A
   ⊥-elim ()
+
+  record Lift {ℓa} ℓ (A : Type ℓa) : Type (ℓa ⊔ ℓ) where
+    constructor lift
+    field
+      lower : A
+
+  ⊥* : ∀{ℓ} → Type ℓ
+  ⊥* = Lift _ ⊥
+
+  ⊥*-elim : ∀{ℓ ℓ'} {A : Type ℓ} (x : ⊥* {ℓ'}) → A
+  ⊥*-elim ()
 
   open import Agda.Builtin.Unit
 
-  module SqFillCoproduct (A : Type) (SqFillA : SqFill A) (A' : Type) (SqFillA' : SqFill A') where
+  ⊤* : ∀{ℓ} → Type ℓ
+  ⊤* = Lift _ ⊤
 
-    module EncodeDecode {A B : Type} where
-        inl≠inr : (x : A) (y : B) → (inl x ≡ inr y) → ⊥
-        inl≠inr x y p = transport (cong isLeft p) tt
-            where
-            isLeft : (A + B) → Type
-            isLeft (inl x) = ⊤
-            isLeft (inr y) = ⊥
+  tt* : ∀{ℓ} → ⊤* {ℓ}
+  tt* = lift tt
 
-        Cover : (c c' : A + B) → Type
-        Cover (inl x) (inl y) = x ≡ y
-        Cover (inr x) (inr y) = x ≡ y
-        Cover _ _ = ⊥
+  module SqFillCoproduct {ℓ ℓ'} (A : Type ℓ) (SqFillA : SqFill A) (A' : Type ℓ') (SqFillA' : SqFill A') where
 
-        reflCode : (c : A + B) → Cover c c
-        reflCode (inl x) = refl
-        reflCode (inr x) = refl
+    inl≠inr : (x : A) (y : A') → (inl x ≡ inr y) → ⊥*
+    inl≠inr x y p = transport (cong isLeft p) tt*
+        where
+        isLeft : (A + A') → Type (ℓ ⊔ ℓ')
+        isLeft (inl x) = ⊤*
+        isLeft (inr y) = ⊥*
 
-        encode : {c c' : A + B} → c ≡ c' → Cover c c'
-        encode {c = c} p = transport (λ i → Cover c (p i)) (reflCode c)
+    Cover : (c c' : A + A') → Type (ℓ ⊔ ℓ')
+    Cover (inl x) (inl y) = Lift (ℓ ⊔ ℓ') (x ≡ y)
+    Cover (inl _) (inr _) = ⊥*
+    Cover (inr _) (inl _) = ⊥*
+    Cover (inr x) (inr y) = Lift (ℓ ⊔ ℓ') (x ≡ y)
 
-        decode : {c c' : A + B} → Cover c c' → c ≡ c'
-        decode {c = inl x} {c' = inl y} = cong inl
-        decode {c = inr x} {c' = inr y} = cong inr
+    reflCode : (c : A + A') → Cover c c
+    reflCode (inl x) = lift refl
+    reflCode (inr x) = lift refl
 
-        decodeEncode : {c c' : A + B} (p : c ≡ c') → decode (encode p) ≡ p
-        decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
-        decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
+    encode : {c c' : A + A'} → c ≡ c' → Cover c c'
+    encode {c = c} p = transport (λ i → Cover c (p i)) (reflCode c)
 
-    open EncodeDecode
+    decode : {c c' : A + A'} → Cover c c' → (c ≡ c')
+    decode {c = inl x} {c' = inl y} (lift p) = cong inl p
+    decode {c = inr x} {c' = inr y} (lift p) = cong inr p
+
+    decodeEncode : {c c' : A + A'} (p : c ≡ c') → decode (encode p) ≡ p
+    decodeEncode {c = inl x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inl) (transportRefl refl))
+    decodeEncode {c = inr x} = J (λ c' p → decode (encode p) ≡ p) (cong (cong inr) (transportRefl refl))
 
     SqFillCoproduct : SqFill (A + A')
     SqFillCoproduct {inl lu} {inl ld} l {inl ru} {inl rd} r u d i j =
@@ -210,20 +225,20 @@ module SqFill where
             k (i = i1) → decodeEncode r k j
             k (j = i0) → decodeEncode u k i
             k (j = i1) → decodeEncode d k i)
-        (inl {A = A} {B = A'} (SqFillA (encode l) (encode r) (encode u) (encode d) i j)))
+        (inl {A = A} {B = A'} (SqFillA (encode l .Lift.lower) (encode r .Lift.lower) (encode u .Lift.lower) (encode d .Lift.lower) i j)))
     SqFillCoproduct {inr lu} {inr ld} l {inr ru} {inr rd} r u d i j =
         (hcomp (λ where
             k (i = i0) → decodeEncode l k j
             k (i = i1) → decodeEncode r k j
             k (j = i0) → decodeEncode u k i
             k (j = i1) → decodeEncode d k i)
-        (inr {A = A} {B = A'} (SqFillA' (encode l) (encode r) (encode u) (encode d) i j)))
-    SqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥-elim (inl≠inr x y l)
-    SqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥-elim (inl≠inr y x (sym l))
-    SqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥-elim (inl≠inr x y u)
-    SqFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥-elim (inl≠inr y x (sym u))
-    SqFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥-elim (inl≠inr x y d)
-    SqFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥-elim (inl≠inr y x (sym d))
+        (inr {A = A} {B = A'} (SqFillA' (encode l .Lift.lower) (encode r .Lift.lower) (encode u .Lift.lower) (encode d .Lift.lower) i j)))
+    SqFillCoproduct {inl x} {inr y} l _ _ _ = ⊥*-elim (inl≠inr x y l)
+    SqFillCoproduct {inr x} {inl y} l _ _ _ = ⊥*-elim (inl≠inr y x (sym l))
+    SqFillCoproduct {inl x} {_} _ {inr y} _ u _ = ⊥*-elim (inl≠inr x y u)
+    SqFillCoproduct {inr x} {_} _ {inl y} _ u _ = ⊥*-elim (inl≠inr y x (sym u))
+    SqFillCoproduct {_} {inl x} _ {_} {inr y} _ _ d = ⊥*-elim (inl≠inr x y d)
+    SqFillCoproduct {_} {inr x} _ {_} {inl y} _ _ d = ⊥*-elim (inl≠inr y x (sym d))
 
   {-# BUILTIN SQFILLCOPRODUCT SqFillCoproduct.SqFillCoproduct #-}
 
