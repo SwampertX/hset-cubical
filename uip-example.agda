@@ -18,8 +18,9 @@ import Agda.Builtin.Cubical.HCompU
 
 open import Helper hiding (sym)
 open import SqFill using (SqFill)
--- primitive prim^sqFill : (A : Set) → SqFill A
-postulate prim^sqFill : (A : Set) → SqFill A
+primitive
+  prim^sqFill : ∀{ℓ} (A : Type ℓ) → SqFill A
+-- postulate prim^sqFill : (A : Set) → SqFill A
 sqFill = prim^sqFill
 uip : {A : Type} {x y : A} (p q : x ≡ y) → p ≡ q
 uip p q = sqFill _ p q refl refl
