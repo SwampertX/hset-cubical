@@ -2,16 +2,15 @@
 
 module Helper where
   open import Agda.Builtin.Cubical.Path public
-  open import Agda.Primitive.Cubical public
+  open import Agda.Primitive.Cubical
     renaming ( primIMin       to _∧_  -- I → I → I
              ; primIMax       to _∨_  -- I → I → I
              ; primINeg       to ~_   -- I → I
              ; primComp       to comp
              ; primHComp      to hcomp
-             ; primTransp     to transp)
+             ; primTransp     to transp) public
 
   open import Agda.Primitive public renaming (Set   to Type)
-  open import Agda.Builtin.Cubical.Sub public
   open import Agda.Builtin.Unit public
   open import Agda.Builtin.Cubical.Sub public
     renaming (primSubOut to outS)
@@ -43,7 +42,7 @@ module Helper where
   cong f p i = f (p i)
   {-# INLINE cong #-}
 
-  cong₂ : ∀{ℓ ℓ'} {A : Type ℓ} {B : A → Type ℓ'} {x y : A} {C : (a : A) → (b : B a) → Type ℓ} →
+  cong₂ : ∀{ℓ ℓ' ℓ''} {A : Type ℓ} {B : A → Type ℓ'} {x y : A} {C : (a : A) → (b : B a) → Type ℓ''} →
           (f : (a : A) → (b : B a) → C a b) →
           (p : x ≡ y) →
           {u : B x} {v : B y} (q : PathP (λ i → B (p i)) u v) →
@@ -99,7 +98,6 @@ module Helper where
   ⊥*-elim : ∀{ℓ ℓ'} {A : Type ℓ} (x : ⊥* {ℓ'}) → A
   ⊥*-elim ()
 
-
   ⊤* : ∀{ℓ} → Type ℓ
   ⊤* = Lift _ ⊤
 
@@ -110,3 +108,6 @@ module Helper where
   if i then j else k end = (k ∧ (~ i ∨ j)) ∨ ((i ∨ k) ∧ j)
 
   {-# INLINE if_then_else_end #-}
+
+  subst : ∀{ℓa ℓb} {A : Type ℓa} {a a' : A} (B : A → Type ℓb) (p : a ≡ a') → B a → B a'
+  subst B p = transport (λ i → B (p i))
