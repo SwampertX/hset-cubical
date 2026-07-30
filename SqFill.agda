@@ -8,6 +8,7 @@ module SqFill where
   open import SqFillCoproduct public
   open import SqFillPath public
   open import SqFillUnit public
+  open import SqFillBool public
   open import SqFillNat public
   open import SqFillList public
   open import SqFillMaybe public

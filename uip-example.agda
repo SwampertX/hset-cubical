@@ -18,6 +18,7 @@ import Agda.Builtin.Cubical.HCompU
 
 open import Helper
 open import SqFill
+open import SqFillDef
 primitive
   prim^sqFill : ∀{ℓ} (A : Type ℓ) → SqFill A
 -- postulate prim^sqFill : (A : Set) → SqFill A
