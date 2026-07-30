@@ -16,23 +16,16 @@ open import Agda.Builtin.Cubical.Sub
   renaming (primSubOut to outS)
 import Agda.Builtin.Cubical.HCompU
 
-open import Helper hiding (sym)
-open import SqFill using (SqFill)
--- primitive prim^sqFill : (A : Set) → SqFill A
-postulate prim^sqFill : (A : Set) → SqFill A
+open import Helper
+open import SqFill
+primitive
+  prim^sqFill : ∀{ℓ} (A : Type ℓ) → SqFill A
+-- postulate prim^sqFill : (A : Set) → SqFill A
 sqFill = prim^sqFill
 uip : {A : Type} {x y : A} (p q : x ≡ y) → p ≡ q
 uip p q = sqFill _ p q refl refl
 
-sym : ∀ {ℓ} {A : Set ℓ} {a b : A} → a ≡ b → b ≡ a
-sym p i = p (~ i)
-{-# INLINE sym #-}
-
-subst : ∀{ℓ ℓ'} {A : Type ℓ} {x y : A} (B : A → Type ℓ') (p : x ≡ y) → B x → B y
-subst B p pa = transport (λ i → B (p i)) pa
-{-# INLINE subst #-}
-
-infixr 4 _$_ 
+infixr 4 _$_
 _$_ : ∀ {ℓa ℓb} {A : Set ℓa} {B : A → Set ℓb} (f : (a : A) → B a) (a : A) → B a
 f $ a = f a
 -- {-# INLINE _$_ #-}

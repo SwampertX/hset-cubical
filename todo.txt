@@ -1,0 +1,3 @@
+TODOS
+
+- decode-encode used by Nat, List, Maybe etc can be abstracted.
