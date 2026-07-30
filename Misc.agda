@@ -1,5 +1,5 @@
 -- If you are running mainline Agda, use --cubical
-{-# OPTIONS --cubical=no-glue #-}
+{-# OPTIONS --cubical=no-glue --guardedness #-}
 
 -- Prelude is glue-free: --cubical=no-glue works out of the box.
 open import Cubical.Foundations.Prelude
@@ -11,7 +11,7 @@ open import Cubical.Foundations.Prelude
     isProp; J; transportRefl; sym; toPathP
   )
 
-open import SqFill using (SqFill)
+open import SqFillDef using (SqFill)
 
 SqFill-lr→ud : {A : Type}
   {lu ld : A} (l : lu ≡ ld)

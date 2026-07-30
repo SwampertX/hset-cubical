@@ -1,4 +1,4 @@
-{-# OPTIONS --cubical=no-glue #-}
+{-# OPTIONS --cubical=no-glue --guardedness #-}
 
 module Everything where
 

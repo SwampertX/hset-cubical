@@ -2,6 +2,7 @@
 
 open import Helper
 open import Agda.Builtin.Nat
+open import SqFillDef
 
 module SqFillNat where
   private

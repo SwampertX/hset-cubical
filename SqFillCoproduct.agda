@@ -2,6 +2,7 @@
 
 open import Helper
 open import Agda.Builtin.Coproduct renaming (_⊎_ to _+_)
+open import SqFillDef
 
 module SqFillCoproduct where
   module _ {ℓ ℓ'} (A : Type ℓ) (SqFillA : SqFill A) (B : Type ℓ') (SqFillB : SqFill B) where

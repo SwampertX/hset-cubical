@@ -1,6 +1,7 @@
 {-# OPTIONS --cubical=no-glue #-}
 open import Helper
 open import Agda.Builtin.List
+open import SqFillDef
 
 module SqFillList where
   module _ {ℓ} (A : Type ℓ) (sqFillA : SqFill A) where

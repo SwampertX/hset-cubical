@@ -1,6 +1,7 @@
 {-# OPTIONS --cubical=no-glue #-}
 
 open import Helper
+open import SqFillDef
 
 module SqFillUnit where
   SqFillUnit : SqFill ⊤
