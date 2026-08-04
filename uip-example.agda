@@ -423,17 +423,27 @@ constituteEquivFromPath p q = subst (λ x → ConstituteEquiv (functorFromPath p
 
 open import Agda.Builtin.Nat
 
-TypeCat : Category
-TypeCat .ob = Nat
-TypeCat .Hom[_,_] = _≡_
-TypeCat ._⋆_ = _∙_
-TypeCat .⋆id = refl
-TypeCat .⋆Idl = {!reflIdl!}
-TypeCat .⋆Idr p = reflIdr
-TypeCat .⋆Assoc = {!!}
-TypeCat .isSetHom = {!!}
+NatCat : Category
+NatCat .ob = Nat
+NatCat .Hom[_,_] = _≡_
+NatCat ._⋆_ = _∙_
+NatCat .⋆id = refl
+NatCat .⋆Idl = {!reflIdl!}
+NatCat .⋆Idr p = reflIdr
+NatCat .⋆Assoc = {!!}
+NatCat .isSetHom = {!!}
 
-x = constituteEquivFromPath {C = TypeCat} refl refl .ConstituteEquiv.ε .N-ob 1
+TypeCat : Category
+TypeCat .ob = Type
+TypeCat .Hom[_,_] A B = A → B
+TypeCat ._⋆_ = _⋆f_
+TypeCat .⋆id = λ a → a
+TypeCat .⋆Idl f i x = f x
+TypeCat .⋆Idr f i x = f x
+TypeCat .⋆Assoc {f = f} {g = g} {h = h} i x = h (g (f x))
+TypeCat .isSetHom = uip
+
+x = constituteEquivFromPath {C = NatCat} refl refl .ConstituteEquiv.ε .N-ob 1
 see : x ≡ refl
 see = {!!}
 

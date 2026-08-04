@@ -21,7 +21,7 @@ module SqFillSigma where
         lub' : B (sqa i j)
         lub' = transport (λ k → B (spread i0 i0 i j k)) lub
         LemmaLU : PathP (λ k → B (spread i0 i0 i j k)) lub lub'
-        LemmaLU k = transp (λ l → B (spread i0 i0 i j (k ∧ l))) (~ k) lub
+        LemmaLU = transport-filler (λ i₁ → B (spread i0 i0 i j i₁)) lub
 
         ldb : B (fst ld)
         ldb = snd ld
@@ -107,4 +107,5 @@ module SqFillSigma where
                             k (j' = i0) → LemmaU (~ k) i'
                             k (j' = i1) → LemmaD (~ k) i') (outS (sqb' i' j')))
 
+    {-# INLINE SqFillSigma #-}
   {-# BUILTIN SQFILLSIGMA SqFillSigma #-}
