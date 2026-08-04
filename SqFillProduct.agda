@@ -2,6 +2,7 @@
 
 open import Helper
 open import Agda.Builtin.Product
+open import SqFillDef
 
 module SqFillProduct where
   module _ {ℓ ℓ'} (A : Type ℓ) (SqFillA : SqFill A) (B : Type ℓ') (SqFillB : SqFill B) where

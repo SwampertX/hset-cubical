@@ -23,6 +23,7 @@ open import Agda.Builtin.Maybe
 -- open import Cubical.Data.Empty.Base
 
 open import SqFill
+open import SqFillDef
 -- open import SqPFill
 
 -- primitive primIMin : I → I → I
@@ -37,7 +38,7 @@ module hello (A B : Type) where
 
   postulate SqFillB : SqFill B
 
-  q = SqFill.SqFillPi.SqFillPiAB A (λ ^ → B) (λ _ → sqFill B)
+  q = SqFill.SqFillPi A (λ ^ → B) (λ _ → sqFill B)
 
   check : (λ {lu} {ld} → p {lu} {ld}) ≡ q
   check k = p
@@ -48,7 +49,7 @@ module hello-dep (A : Type) (B : A → Type)
   piPrim = sqFill ((a : A) → B a)
 
   piManual : SqFill ((a : A) → B a)
-  piManual = SqFill.SqFillPi.SqFillPiAB A (λ a → B a) (λ a → sqFill (B a))
+  piManual = SqFill.SqFillPi A (λ a → B a) (λ a → sqFill (B a))
 
   checkPi : (λ {lu} {ld} → piPrim {lu} {ld}) ≡ piManual
   checkPi _ = piPrim
@@ -57,7 +58,7 @@ module hello-dep (A : Type) (B : A → Type)
   sigmaPrim =  sqFill (Σ A (λ a → B a))
 
   sigmaManual : SqFill (Σ A (λ a → B a))
-  sigmaManual = SqFill.SqFillSigma.SqFillSigmaAB A (sqFill A) B λ a → sqFill (B a)
+  sigmaManual = SqFill.SqFillSigma A (sqFill A) B λ a → sqFill (B a)
 
   checkSigma : (λ {lu} {ld} → sigmaPrim {lu} {ld}) ≡ sigmaManual
   checkSigma _ = sigmaPrim
@@ -66,7 +67,7 @@ module hello-dep (A : Type) (B : A → Type)
   productPrim =  sqFill (A × A)
 
   productManual : SqFill (A × A)
-  productManual = SqFill.SqFillProduct.SqFillProductAB A (sqFill A) A (sqFill A)
+  productManual = SqFill.SqFillProduct A (sqFill A) A (sqFill A)
 
   checkProduct : (λ {lu} {ld} → productPrim {lu} {ld}) ≡ productManual
   checkProduct i = productPrim
@@ -77,7 +78,7 @@ module hello-dep (A : Type) (B : A → Type)
   unitPrim = sqFill ⊤
 
   unitManual : SqFill ⊤
-  unitManual = SqFill.SqFillUnit.SqFillUnit
+  unitManual = SqFill.SqFillUnit
 
   checkUnit : (λ {lu} {ld} → unitPrim {lu} {ld}) ≡ unitManual
   checkUnit _ = unitPrim
@@ -88,7 +89,7 @@ module hello-dep (A : Type) (B : A → Type)
   boolPrim = sqFill Bool
 
   boolManual : SqFill Bool
-  boolManual = SqFill.SqFillBool.SqFillBool
+  boolManual = SqFill.SqFillBool
 
   checkBool : (λ {lu} {ld} → boolPrim {lu} {ld}) ≡ boolManual
   checkBool _ = boolPrim

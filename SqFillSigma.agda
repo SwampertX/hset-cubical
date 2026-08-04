@@ -1,6 +1,7 @@
 {-# OPTIONS --cubical=no-glue #-}
 
 open import Helper
+open import SqFillDef
 open import Agda.Builtin.Sigma
 
 module SqFillSigma where

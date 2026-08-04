@@ -1,6 +1,7 @@
 {-# OPTIONS --cubical=no-glue #-}
 
 open import Helper
+open import SqFillDef
 
 module SqFillPath where
   module _ {ℓ} (A : Type ℓ) (a b : A) (SqFillA : SqFill A)  where

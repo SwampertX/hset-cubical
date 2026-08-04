@@ -72,16 +72,6 @@ module Helper where
   sym p = λ i → p (~ i)
   {-# INLINE sym #-}
 
-  -- SqFill : Type → Type
-  SqFill : ∀{ℓ} → Type ℓ → Type ℓ
-  SqFill A =
-    {a₀₀ : A} {a₀₁ : A} (a₀₋ : a₀₀ ≡ a₀₁)
-    {a₁₀ : A} {a₁₁ : A} (a₁₋ : a₁₀ ≡ a₁₁)
-    (a₋₀ : a₀₀ ≡ a₁₀) (a₋₁ : a₀₁ ≡ a₁₁)
-    → PathP (λ i → a₋₀ i ≡ a₋₁ i) a₀₋ a₁₋
-
-  {-# BUILTIN SQFILL SqFill #-}
-
   data ⊥ : Type where
 
   ⊥-elim : ∀{ℓ} {A : Type ℓ} (x : ⊥) → A

@@ -2,6 +2,7 @@
 
 open import Helper
 open import Agda.Builtin.Maybe
+open import SqFillDef
 
 module SqFillMaybe where
   module _ {ℓ} (A : Type ℓ) (sqFillA : SqFill A) where
