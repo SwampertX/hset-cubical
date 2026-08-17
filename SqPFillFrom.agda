@@ -28,6 +28,12 @@ module SqPFillFrom where
     -- from (i to i' via k) to (j to j' via k) via k'
     icoe2 : (i i' j j' k k' : I) → I
     icoe2 i i' j j' k k' = icoe (icoe i j k') (icoe i' j' k') k
+    {- Discussion 07/08/2026 with Miguel, Yee-Jian, Andreas:
+      It seems the following squares in I have the exact same boundary:
+      λ k k' → icoe2 i  i' j  j' k  k'
+                      |   X    |   X
+      λ k k' → icoe2 i  j  i' j' k' k
+    -}
 
     lemma : ∀{ℓ} (A : I → I → Type ℓ)
             {ilu jlu ild jld iru jru ird jrd : I}
