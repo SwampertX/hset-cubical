@@ -9,7 +9,7 @@ open import Agda.Builtin.List
 open import Agda.Builtin.Maybe
 open import Agda.Builtin.Product
 open import Agda.Builtin.Coproduct
-open import SqFill using (SqFill)
+open import SqFillDef using (SqFill)
 
 data ⊥ : Set where
 

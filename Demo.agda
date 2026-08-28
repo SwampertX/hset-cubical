@@ -20,9 +20,10 @@ open import Agda.Builtin.Maybe
 open import Agda.Builtin.Product
 open import Agda.Builtin.Coproduct
 open import SqFill
+open import SqFillDef
 open import Helper using (refl)
 
-primitive prim^sqFill : (A : Type) → SqFill A
+primitive prim^sqFill : {l : Level} (A : Type l) → SqFill A
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Coproducts via Σ + Bool  (prim^sqFill handles these via the Sigma/Bool rules)
